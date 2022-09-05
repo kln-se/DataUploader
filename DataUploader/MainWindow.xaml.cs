@@ -43,41 +43,30 @@ namespace DataUploader
                                     "|Excel files (*.xlsx)|*.xlsx";
             if (openFileDialog.ShowDialog() == true)
             {
-                tbFilePath.Text = FolderContent.ExtractFileName(openFileDialog.FileName);
-                tbTest.Text = FileExtension.DetermineExtension(openFileDialog.FileName);
+                string fileName = FolderContent.ExtractFileName(openFileDialog.FileName);
+                string fileExtension = FileExtension.DetermineExtension(openFileDialog.FileName);
+                
+                // Запись имени файла в TextBox tbFilePath
+                tbFilePath.Text = fileName;
+                FileExtension.SetRadioButtonState(fileExtension, rbArchive, rbDtl, rbXls, rbXlsx);
             }
         }
 
         /// <summary>
         /// Обработка события Click в элементе Button btnBrowseDestination "Обзор..."
         /// </summary>
-        private void ChooseDestinationDialog(object sender, RoutedEventArgs e)
+        private void ChooseFolderDialog(object sender, RoutedEventArgs e)
         {
-
             string currentDirectory = Directory.GetCurrentDirectory();
-            /*
-            Microsoft.Win32.SaveFileDialog dialog = new Microsoft.Win32.SaveFileDialog();
-            dialog.InitialDirectory = currentDirectory;
-            dialog.Title = "Выберете папку";
-            dialog.Filter = "Папка|*.this.directory";
-            dialog.FileName = ""; // Filename will then be "select.this.directory"
-            if (dialog.ShowDialog() == true)
-            {
-                string path = dialog.FileName;
-                // Remove fake filename from resulting path
-                path = path.Replace("\\select.this.directory", "");
-                path = path.Replace(".this.directory", "");
-                // If user has changed the filename, create the new directory
-                if (!System.IO.Directory.Exists(path))
-                {
-                    System.IO.Directory.CreateDirectory(path);
-                }
-                tbDestinationPath.Text = path;
-            }*/
+
             System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
             {
                 dialog.SelectedPath = currentDirectory;
                 System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+                if (result == System.Windows.Forms.DialogResult.OK)
+                {
+                    tbDestinationPath.Text = dialog.SelectedPath;
+                }
             }
         }
     }
