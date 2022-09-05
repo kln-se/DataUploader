@@ -28,8 +28,8 @@ namespace DataUploader
 
             string currentDirectory = Directory.GetCurrentDirectory();
             tbDestinationPath.Text = currentDirectory;
-
-            //FolderContent.ListContent(currentDirectory, lbFolderContent);
+            tbTest.Text = mw.ActualWidth.ToString(); // (!)Test
+            //FolderContent.ListContent(currentDirectory, lbFolderContent); // (!)Test
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace DataUploader
                 
                 // Запись имени файла в TextBox tbFilePath
                 tbFilePath.Text = fileName;
-                FileExtension.SetRadioButtonState(fileExtension, rbArchive, rbDtl, rbXls, rbXlsx);
+                FileExtension.SetRadioButtonState(fileExtension, rbArchiveZip, rbArchive7z, rbDtl, rbXls, rbXlsx);
             }
         }
 
@@ -61,6 +61,7 @@ namespace DataUploader
 
             System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
             {
+                dialog.Description = "Выберете директорию для извлечения архива.";
                 dialog.SelectedPath = currentDirectory;
                 System.Windows.Forms.DialogResult result = dialog.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK)
@@ -68,6 +69,11 @@ namespace DataUploader
                     tbDestinationPath.Text = dialog.SelectedPath;
                 }
             }
+        }
+        // (!)Test
+        private void btnTestClick(object sender, RoutedEventArgs e)
+        {
+            tbTest.Text = mw.ActualWidth.ToString();
         }
     }
 }
