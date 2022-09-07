@@ -27,19 +27,9 @@ namespace DataUploader
             InitializeComponent();
 
             string currentDirectory = Directory.GetCurrentDirectory();
-            string destinationPath = "D:/Sergei/TEMP/temp/test"; // (!)Test
-            //string destinationPath = currentDirectory;
-            string filePath = "";
-
-            tbDestinationPath.Text = destinationPath;
-
-            tbTest.Text = mW.ActualWidth.ToString(); // (!)Test
-            FolderContent.ListContent(currentDirectory, lbFolderContent); // (!)Test
-
-            // При запуске программы файл не выбран, следовательно надо все соотвествующие...
-            // ...элементы интерфейса отключить
-            FileExtension.DisableUiElements(this, "default", false);
-
+            tbDestinationPath.Text = currentDirectory;
+            tbTest.Text = mw.ActualWidth.ToString(); // (!)Test
+            //FolderContent.ListContent(currentDirectory, lbFolderContent); // (!)Test
         }
 
         /// <summary>
@@ -58,7 +48,7 @@ namespace DataUploader
                 
                 // Запись имени файла в TextBox tbFilePath
                 tbFilePath.Text = fileName;
-                FileExtension.SetRadioButtonState(fileExtension, this);
+                FileExtension.SetRadioButtonState(fileExtension, rbArchiveZip, rbArchive7z, rbDtl, rbXls, rbXlsx);
             }
         }
 
@@ -80,40 +70,10 @@ namespace DataUploader
                 }
             }
         }
-
-        // Обработка событий Checked на RadioButton'ах
-        private void checkRbArchiveZip(object sender, RoutedEventArgs e)
+        // (!)Test
+        private void btnTestClick(object sender, RoutedEventArgs e)
         {
-            FileExtension.DisableUiElements(this, ".zip", false);
-        }
-
-        private void checkRbArchive7z(object sender, RoutedEventArgs e)
-        {
-            FileExtension.DisableUiElements(this, ".7z", false);
-        }
-
-        private void checkRbDtl(object sender, RoutedEventArgs e)
-        {
-            FileExtension.DisableUiElements(this, ".dtl", false);
-        }
-
-        private void checkRbXls(object sender, RoutedEventArgs e)
-        {
-            FileExtension.DisableUiElements(this, ".xls", false);
-        }
-
-        private void checkRbXlsx(object sender, RoutedEventArgs e)
-        {
-            FileExtension.DisableUiElements(this, ".xlsx", false);
-        }
-
-        /// <summary>
-        /// Обработка события Click в элементе Button btnExtract.
-        /// Извлекает содержимое архива в папку
-        /// </summary>
-        private void ExtractArchive(object sender, RoutedEventArgs e)
-        {
-            //public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName);
+            tbTest.Text = mw.ActualWidth.ToString();
         }
     }
 }
