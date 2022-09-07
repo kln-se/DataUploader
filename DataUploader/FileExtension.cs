@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace DataUploader
@@ -18,46 +19,108 @@ namespace DataUploader
         /// <summary>
         /// В зависимости от от расширения файла "закрашивает" тот или иной RadioButton
         /// </summary>
-        public static void SetRadioButtonState(string extension,
-                                               RadioButton rbArchiveZip,
-                                               RadioButton rbArchive7z,
-                                               RadioButton rbDtl,
-                                               RadioButton rbXls,
-                                               RadioButton rbXlsx)
+        public static void SetRadioButtonState(string extension, MainWindow mW)
         {
             switch (extension)
             {
                 case ".zip":
-                    rbArchiveZip.IsChecked = true;
+                    mW.rbArchiveZip.IsChecked = true;
                     break;
                 case ".7z":
-                    rbArchive7z.IsChecked = true;
+                    mW.rbArchive7z.IsChecked = true;
                     break;
                 case ".dtl":
-                    rbDtl.IsChecked = true;
+                    mW.rbDtl.IsChecked = true;
                     break;
                 case ".xls":
-                    rbXls.IsChecked = true;
+                    mW.rbXls.IsChecked = true;
                     break;
                 case ".xlsx":
-                    rbXlsx.IsChecked = true;
+                    mW.rbXlsx.IsChecked = true;
                     break;
                 default:
-                    rbArchiveZip.IsChecked = false;
-                    rbArchive7z.IsChecked = false;
-                    rbDtl.IsChecked = false;
-                    rbXlsx.IsChecked = false;
-                    rbXls.IsChecked = false;
+                    mW.rbArchiveZip.IsChecked = false;
+                    mW.rbArchive7z.IsChecked = false;
+                    mW.rbDtl.IsChecked = false;
+                    mW.rbXlsx.IsChecked = false;
+                    mW.rbXls.IsChecked = false;
+
+                    // Когда пользователь выбирает файл, который программа не может определить...
+                    // ... необходимо элементы интерфейса отключить
+                    FileExtension.DisableUiElements(mW, "default", false);
+
                     break;
             }
         }
+
         /// <summary>
-        /// В зависимости от расширения файла "закрашивает" включает/отключает элементы
-        /// интерфейса
+        /// В зависимости от расширения файла отключает элементы интерфейса
         /// </summary>
-        public static void EnableUiElements()
+        public static void DisableUiElements(MainWindow mW, string extension, bool isTrue)
         {
-            // (!)ToDo
+            // Сначала всё включим
+            EnableAllUiElements();
+
+            // Затем нужное отключим
+            Control[] uiGroupToBeDisabled = ReturnUiGroupToBeDisabled();
+            for (int i = 0; i < uiGroupToBeDisabled.Length; i++)
+            {
+                uiGroupToBeDisabled[i].IsEnabled = isTrue;
+            }
+
+            /// <summary>
+            /// В зависимости от расширения файла возвращает группу элементов интерфейса, которую
+            /// надо сделать неактивной
+            /// </summary>
+            Control[] ReturnUiGroupToBeDisabled()
+            {
+                switch (extension)
+                {
+                    case ".zip":
+                        // Group 1
+                        return new Control[1] { mW.btnTest };
+                    case ".7z":
+                        // Group 2
+                        return new Control[1] { mW.btnTest };
+                    case ".dtl":
+                        // Group 3
+                        return new Control[3] {mW.tbDestinationPath,
+                                               mW.btnBrowseDestination,
+                                               mW.btnExtract};
+                    case ".xls":
+                        // Group 4
+                        return new Control[3] {mW.tbDestinationPath,
+                                               mW.btnBrowseDestination,
+                                               mW.btnExtract};
+                    case ".xlsx":
+                        // Group 5
+                        return new Control[3] {mW.tbDestinationPath,
+                                               mW.btnBrowseDestination,
+                                               mW.btnExtract};
+                    default:
+                        // Group 6
+                        return new Control[3] {mW.tbDestinationPath,
+                                               mW.btnBrowseDestination,
+                                               mW.btnExtract};
+                }
+            }
+            /// <summary>
+            /// Возвращает группу элементов интерфейса, которую надо сделать активной
+            /// (сначала включить все UI элементы, а потом уже нужные отключить)
+            /// </summary>
+            void EnableAllUiElements()
+            {
+                // Group 7
+                Control[] uiGroupToBeEnabled = new Control[] {mW.tbDestinationPath,
+                                                              mW.btnBrowseDestination,
+                                                              mW.btnExtract};
+
+                for (int i = 0; i < uiGroupToBeEnabled.Length; i++)
+                {
+                    uiGroupToBeEnabled[i].IsEnabled = true;
+                }
+            }
         }
+
     }
 }
