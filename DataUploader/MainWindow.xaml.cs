@@ -14,6 +14,8 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using System.IO;
 using System.Windows.Forms;
+using System.IO.Compression;
+using System.ComponentModel;
 
 namespace DataUploader
 {
@@ -23,15 +25,13 @@ namespace DataUploader
     public partial class MainWindow : Window
     {
         
-        string filePath = "";
-        
+        public string filePath = "";
+        public string destinationPath = "D:/Sergei/TEMP/temp/test"; // (!)Test
+        //string destinationPath = Directory.GetCurrentDirectory();
+
         public MainWindow()
         {
             InitializeComponent();
-
-            //string destinationPath = Directory.GetCurrentDirectory();
-            string destinationPath = "D:/Sergei/TEMP/temp/test"; // (!)Test
-            //string destinationPath = currentDirectory;
 
             tbDestinationPath.Text = destinationPath;
 
@@ -55,11 +55,12 @@ namespace DataUploader
                                     "|Excel files (*.xlsx)|*.xlsx";
             if (openFileDialog.ShowDialog() == true)
             {
-                string fileName = FolderContent.ExtractFileName(openFileDialog.FileName);
-                string fileExtension = FileExtension.DetermineExtension(openFileDialog.FileName);
-
+                string fileName = System.IO.Path.GetFileName(openFileDialog.FileName);
+                string fileExtension = System.IO.Path.GetExtension(openFileDialog.FileName);
+               
                 // Запись имени файла в TextBox tbFilePath
                 tbFilePath.Text = fileName;
+                this.filePath = openFileDialog.FileName;
                 FileExtension.SetRadioButtonState(fileExtension, this);
             }
         }
@@ -115,11 +116,9 @@ namespace DataUploader
         /// </summary>
         private void ExtractArchive(object sender, RoutedEventArgs e)
         {
-            if (filePath == "")
-            {
-                FileExtension.DisableUiElements(this, "default", false);
-            }
-            //public static void ExtractToDirectory(string sourceArchiveFileName, string destinationDirectoryName);
+            System.Windows.MessageBox.Show(filePath);
+            WaitingBox wb = new WaitingBox(filePath, tbDestinationPath.Text);
+            wb.ShowDialog();
         }
     }
 }

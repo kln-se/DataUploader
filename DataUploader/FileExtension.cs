@@ -8,6 +8,10 @@ using System.Windows.Controls;
 
 namespace DataUploader
 {
+    /// <summary>
+    /// Содержит методы, которые используются в зависимости от расширения файла, подгруженного
+    /// пользователем.
+    /// </summary>
     internal class FileExtension
     {
         public static string DetermineExtension(string filePath)
@@ -46,7 +50,7 @@ namespace DataUploader
                     mW.rbXls.IsChecked = false;
 
                     // Когда пользователь выбирает файл, который программа не может определить...
-                    // ... необходимо элементы интерфейса отключить
+                    // ...необходимо элементы интерфейса отключить
                     FileExtension.DisableUiElements(mW, "default", false);
 
                     break;
@@ -104,6 +108,7 @@ namespace DataUploader
                                                mW.btnExtract};
                 }
             }
+
             /// <summary>
             /// Возвращает группу элементов интерфейса, которую надо сделать активной
             /// (сначала включить все UI элементы, а потом уже нужные отключить)
@@ -122,5 +127,67 @@ namespace DataUploader
             }
         }
 
+        /// <summary>
+        /// Функция, которая вызывается, если пользователь подгрузил ZIP-архив.
+        /// </summary>
+        /// <param name="filePath">Путь к архиву.</param>
+        /// <param name="Destination">Путь к директории, в котороую необходимо извлесь архив</param>
+        /// <returns>Возвращает false при успешном завершении, true при появлении ошибок.</returns>
+        public static bool ExtractArchiveZip(string filePath, string Destination)
+        {
+            try
+            {
+                int encodingCode = System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage;
+                System.IO.Compression.ZipFile.ExtractToDirectory(filePath, Destination, Encoding.GetEncoding(encodingCode));
+                // Распаковка выполнена успешно
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                string messageBoxText = "Файл не выбран.";
+                string caption = "Ошибка выбора файла";
+
+                System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+                // Распаковка не выполнена
+                return true;
+            }
+            catch (System.IO.InvalidDataException)
+            {
+                string messageBoxText = "Выбранный файл не является допустимым ZIP-архивом.";
+                string caption = "Ошибка типа файла";
+
+                System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+
+                return true;
+            }
+            catch (System.IO.IOException)
+            {
+                string messageBoxText = "Файл с таким именем уже был извлечен или существует.";
+                string caption = "Ошибка извлечения файла";
+
+                System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                string messageBoxText = "Ошибка: " + ex.Message;
+                string caption = "Ошибка";
+
+                System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+
+                return true;
+            }
+        }
+
+        /// <summary>
+        /// Функция, которая вызывается, если пользователь подгрузил 7z-архив.
+        /// </summary>
+        /// <param name="filePath"></param>
+        /// <param name="Destination"></param>
+        public void ExtractArchive7z(string filePath, string Destination)
+        {
+        //ToDo
+        }
     }
 }
