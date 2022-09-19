@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,18 +16,13 @@ namespace DataUploader
     /// </summary>
     internal class FileExtension
     {
-        public static string DetermineExtension(string filePath)
-        {
-            int dotPosition = filePath.LastIndexOf(".");
-            return filePath.Substring(dotPosition);
-        }
 
         /// <summary>
-        /// В зависимости от от расширения файла "закрашивает" тот или иной RadioButton
+        /// В зависимости от расширения файла "закрашивает" тот или иной RadioButton
         /// </summary>
-        public static void SetRadioButtonState(string extension, MainWindow mW)
+        public static void SetRadioButtonState(string fileExtension, MainWindow mW)
         {
-            switch (extension)
+            switch (fileExtension)
             {
                 case ".zip":
                     mW.rbArchiveZip.IsChecked = true;
@@ -60,7 +57,7 @@ namespace DataUploader
         /// <summary>
         /// В зависимости от расширения файла отключает элементы интерфейса
         /// </summary>
-        public static void DisableUiElements(MainWindow mW, string extension, bool isTrue)
+        public static void DisableUiElements(MainWindow mW, string fileExtension, bool isTrue)
         {
             // Сначала всё включим
             EnableAllUiElements();
@@ -78,7 +75,7 @@ namespace DataUploader
             /// </summary>
             Control[] ReturnUiGroupToBeDisabled()
             {
-                switch (extension)
+                switch (fileExtension)
                 {
                     case ".zip":
                         // Group 1
@@ -131,20 +128,20 @@ namespace DataUploader
         /// Функция, которая вызывается, если пользователь подгрузил ZIP-архив.
         /// </summary>
         /// <param name="filePath">Путь к архиву.</param>
-        /// <param name="Destination">Путь к директории, в котороую необходимо извлесь архив</param>
+        /// <param name="destinationPath">Путь к директории, в котороую необходимо извлесь архив</param>
         /// <returns>Возвращает false при успешном завершении, true при появлении ошибок.</returns>
-        public static bool ExtractArchiveZip(string filePath, string Destination)
+        public static bool ExtractArchiveZip(string filePath, string destinationPath)
         {
             try
             {
                 int encodingCode = System.Globalization.CultureInfo.CurrentCulture.TextInfo.OEMCodePage;
-                System.IO.Compression.ZipFile.ExtractToDirectory(filePath, Destination, Encoding.GetEncoding(encodingCode));
+                System.IO.Compression.ZipFile.ExtractToDirectory(filePath, destinationPath, Encoding.GetEncoding(encodingCode));
                 // Распаковка выполнена успешно
                 return false;
             }
             catch (ArgumentException)
             {
-                string messageBoxText = "Файл не выбран.";
+                string messageBoxText = "Файл не выбран или неверно указана директория.";
                 string caption = "Ошибка выбора файла";
 
                 System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
@@ -184,10 +181,34 @@ namespace DataUploader
         /// Функция, которая вызывается, если пользователь подгрузил 7z-архив.
         /// </summary>
         /// <param name="filePath"></param>
-        /// <param name="Destination"></param>
-        public void ExtractArchive7z(string filePath, string Destination)
+        /// <param name="destinationPath"></param>
+        public static bool ExtractArchive7z(string filePath, string destinationPath)
         {
-        //ToDo
+
+            string filePathBackSlash = filePath.Replace("/", "\\");
+            string destinationPathBackSlash = destinationPath.Replace("/", "\\");
+
+            try
+            {
+                ProcessStartInfo p = new ProcessStartInfo();
+                p.WindowStyle = ProcessWindowStyle.Hidden;
+                // Необходимые файлы (7za.exe и т.д.) добавлены в ресурсы проекта (/Properties)
+                p.FileName = Directory.GetCurrentDirectory() + "\\Properties\\7za.exe";
+                p.Arguments = string.Format("x \"{0}\" -y -o\"{1}\"", filePathBackSlash, destinationPathBackSlash);
+                Process x = Process.Start(p);
+                x.WaitForExit();
+                // Распаковка выполнена успешно
+                return false;
+            }
+            catch (Exception ex)
+            {
+                string messageBoxText = "Ошибка: " + ex.Message;
+                string caption = "Ошибка";
+
+                System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+                // Распаковка не выполнена
+                return true;
+            }
         }
     }
 }

@@ -15,7 +15,7 @@
                     <Button x:Name="btnBrowseDestination" Content="Обзор..." HorizontalAlignment="Left" Margin="268,137,0,0" VerticalAlignment="Top" Width="90" Height="20" Click="ChooseFolderDialog"/>
                     <TextBox x:Name="tbFilePath" HorizontalAlignment="Left" Margin="20,40,0,0" TextWrapping="NoWrap" Text="Файл не выбран" VerticalAlignment="Top" Width="280" Height="20" MaxLines="1" IsReadOnly="True"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,20,0,0" TextWrapping="Wrap" Text="Выберете файл:" VerticalAlignment="Top" FontWeight="Normal"/>
-                    <TextBox x:Name="tbDestinationPath" HorizontalAlignment="Left" Margin="20,137,0,0" TextWrapping="NoWrap" Text="..." VerticalAlignment="Top" Width="238" Height="20" MaxLines="1"/>
+                    <TextBox x:Name="tbDestinationPath" HorizontalAlignment="Left" Margin="20,137,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Width="238" Height="20" MaxLines="1" TextChanged="ChangedByInput"/>
                     <TextBlock HorizontalAlignment="Left" Margin="20,117,0,0" TextWrapping="Wrap" VerticalAlignment="Top" FontWeight="Normal" Visibility="Visible"><Run Text="Выберете директорию"/><Run Text=" дл"/><Run Language="ru-ru" Text="я извлечения архива"/><Run Text=":"/></TextBlock>
                     <TextBox x:Name="tbTest" HorizontalAlignment="Left" Margin="169,295,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="165" Height="31"/>
                     <Rectangle HorizontalAlignment="Left" Height="33" Margin="20,75,0,0" Stroke="#FFABADB3" VerticalAlignment="Top" Width="380"/>
@@ -40,6 +40,9 @@
                             </Image.Style>
                         </Image>
                     </Button>
+                    <CheckBox Content="Преобразовать в *.xls без импорта в БД" HorizontalAlignment="Left" Margin="38,192,0,0" VerticalAlignment="Top"/>
+                    <Button Content="Импорт в БД" HorizontalAlignment="Left" Margin="20,223,0,0" VerticalAlignment="Top" ToolTip="Импортировать содержание выбранного файла (архива) в базу данных"/>
+                    <Button x:Name="btnConvertDtl" Content="Создать *.xls" HorizontalAlignment="Left" Margin="166,235,0,0" VerticalAlignment="Top" Click="ConvertDtl"/>
                 </Grid>
             </TabItem>
             <TabItem Header="Параметры доступа к БД" IsEnabled="False">

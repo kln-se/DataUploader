@@ -161,6 +161,15 @@
     <Resource Include="wait.gif" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Properties\7za.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Properties\7za.exe">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Properties\7zxa.dll">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="Properties\wait.gif">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

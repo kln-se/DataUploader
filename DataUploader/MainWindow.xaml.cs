@@ -24,16 +24,20 @@ namespace DataUploader
     /// </summary>
     public partial class MainWindow : Window
     {
-        
-        public string filePath = "";
-        public string destinationPath = "D:/Sergei/TEMP/temp/test"; // (!)Test
-        //string destinationPath = Directory.GetCurrentDirectory();
+
+        public string filePath;
+        public string destinationPath;
 
         public MainWindow()
         {
             InitializeComponent();
 
+            this.filePath = "";
+            //this.destinationPath = "D:/Workspaces/VisualStudio/Source/Repos/DataUploader/DataUploader/bin/Debug/test"; // (!)Test
+            this.destinationPath = "D:/Sergei/TEMP/temp/test"; // (!)Test
+            //this.destinationPath = Directory.GetCurrentDirectory();
             tbDestinationPath.Text = destinationPath;
+
 
             //tbTest.Text = mW.ActualWidth.ToString(); // (!)Test
             //FolderContent.ListContent(currentDirectory, lbFolderContent); // (!)Test
@@ -57,7 +61,7 @@ namespace DataUploader
             {
                 string fileName = System.IO.Path.GetFileName(openFileDialog.FileName);
                 string fileExtension = System.IO.Path.GetExtension(openFileDialog.FileName);
-               
+
                 // Запись имени файла в TextBox tbFilePath
                 tbFilePath.Text = fileName;
                 this.filePath = openFileDialog.FileName;
@@ -80,6 +84,7 @@ namespace DataUploader
                 if (result == System.Windows.Forms.DialogResult.OK)
                 {
                     tbDestinationPath.Text = dialog.SelectedPath;
+                    this.destinationPath = dialog.SelectedPath;
                 }
             }
         }
@@ -111,14 +116,27 @@ namespace DataUploader
         }
 
         /// <summary>
+        /// Обработка события TextChanged в элементе TextBox tbDestinationPath.
+        /// Извлекает содержимое архива в папку
+        /// </summary>
+        private void ChangedByInput(object sender, TextChangedEventArgs e)
+        {
+            destinationPath = tbDestinationPath.Text;
+        }
+
+        /// <summary>
         /// Обработка события Click в элементе Button btnExtract.
         /// Извлекает содержимое архива в папку
         /// </summary>
         private void ExtractArchive(object sender, RoutedEventArgs e)
         {
-            System.Windows.MessageBox.Show(filePath);
-            WaitingBox wb = new WaitingBox(filePath, tbDestinationPath.Text);
+            WaitingBox wb = new WaitingBox(this.filePath, this.destinationPath);
             wb.ShowDialog();
+        }
+
+        private void ConvertDtl(object sender, RoutedEventArgs e)
+        {
+
         }
     }
 }

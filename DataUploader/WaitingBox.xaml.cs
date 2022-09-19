@@ -12,6 +12,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.Windows.Media.TextFormatting;
+using System.IO;
 
 namespace DataUploader
 {
@@ -24,20 +27,20 @@ namespace DataUploader
         // Для выполнения операции извлечения архива в отдельном потоке
         private BackgroundWorker bgw = new BackgroundWorker();
 
-        string filePath; 
-        string destinationPath;
+        public string filePath;
+        public string destinationPath;
         bool IsFailedToExtract;
 
         public WaitingBox(string filePath, string destinationPath)
         {
-                       
-            InitializeComponent();          
-            uiElementsInitialization();
-            InitializeBackgroundWorker();
-            StartAsync();
+            InitializeComponent();
 
             this.filePath = filePath;
             this.destinationPath = destinationPath;
+
+            UIelementsInitialization();
+            InitializeBackgroundWorker();
+            StartAsync();
         }
 
         private void InitializeBackgroundWorker()
@@ -50,9 +53,9 @@ namespace DataUploader
 
         }
 
-        private void uiElementsInitialization()
+        private void UIelementsInitialization()
         {
-            meWaitingGif.Source = new Uri(Environment.CurrentDirectory + @"\Properties\wait.gif");
+            meWaitingGif.Source = new Uri(Directory.GetCurrentDirectory() + @"\Properties\wait.gif");
             btnRunExplorer.Visibility = Visibility.Hidden;
             btnErrorClose.Visibility = Visibility.Hidden;
             lbExtractStatus.Visibility = Visibility.Hidden;
@@ -85,13 +88,29 @@ namespace DataUploader
             }
             else
             {
-                this.IsFailedToExtract = FileExtension.ExtractArchiveZip(filePath, destinationPath);
+                string fileExtension = System.IO.Path.GetExtension(this.filePath);
+
+                switch (fileExtension)
+                {
+                    case ".zip":
+                        this.IsFailedToExtract = FileExtension.ExtractArchiveZip(this.filePath, this.destinationPath);
+                        break;
+                    case ".7z":
+                        this.IsFailedToExtract = FileExtension.ExtractArchive7z(this.filePath, this.destinationPath);
+                        break;
+                    default:
+                        string messageBoxText = "Расширение архива не соответствует *.zip или *.7z";
+                        string caption = "Ошибка";
+                        System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+                        break;
+                }
+
             }
         }
 
         private void BgwWorkCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-            
+
             if (e.Cancelled == true)
             {
                 this.Close();
@@ -123,7 +142,7 @@ namespace DataUploader
         /// Обработка события MediaEnded в MediaElement meWaitingGif.
         /// Выполняет перезапуск gif-анимации, чтобы она не прерывалась.
         /// </summary>
-        private void GifEnded(object sender, RoutedEventArgs e) 
+        private void GifEnded(object sender, RoutedEventArgs e)
         {
             meWaitingGif.Position = new TimeSpan(0, 0, 1);
         }
@@ -134,6 +153,15 @@ namespace DataUploader
         private void CloseWindow(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        /// <summary>
+        /// Обработка события Click в Button btnRunExplorer. Открывает директорию, в которую
+        /// был разархивирован архив.
+        /// </summary>
+        private void OpenFolder(object sender, RoutedEventArgs e)
+        {
+            Process.Start("explorer.exe", this.destinationPath.Replace("/", "\\"));
         }
     }
 }
