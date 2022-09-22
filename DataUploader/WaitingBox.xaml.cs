@@ -15,6 +15,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Windows.Media.TextFormatting;
 using System.IO;
+using System.Windows.Threading;
 
 namespace DataUploader
 {
@@ -27,19 +28,43 @@ namespace DataUploader
         // Для выполнения операции извлечения архива в отдельном потоке
         private BackgroundWorker bgw = new BackgroundWorker();
 
+        // Для возможности обратиться к процессу ивлечения/конвертирования заущенному внутри...
+        //...данного экземпляра
+        private FileExtension fE = null;
+
         public string filePath;
         public string destinationPath;
-        bool IsFailedToExtract;
+        public string selectedCsvEncoding;
+        public string choosenFileFormat;
+        public string showMilisec;
 
-        public WaitingBox(string filePath, string destinationPath)
+        bool IsFailedToComplete = false;
+
+        public WaitingBox(string filePath,
+                          string destinationPath,
+                          string selectedCsvEncoding,
+                          string choosenFileFormat,
+                          string showMilisec)
         {
             InitializeComponent();
 
             this.filePath = filePath;
             this.destinationPath = destinationPath;
+            this.selectedCsvEncoding = selectedCsvEncoding;
+            this.choosenFileFormat = choosenFileFormat;
+            this.showMilisec = showMilisec;
 
             UIelementsInitialization();
+
             InitializeBackgroundWorker();
+            
+            // Сделать кнопку "отмена" неактивной, т.к. при извлечении *.zip архива запускается...
+            // ...местная функция, а не процесс, который можно убить
+            if (System.IO.Path.GetExtension(filePath) == ".zip")
+            {
+                btnCancel.IsEnabled = false;
+            }
+
             StartAsync();
         }
 
@@ -63,17 +88,20 @@ namespace DataUploader
 
         private void StartAsync()
         {
-            if (bgw.IsBusy != true)
+            if (!bgw.IsBusy)
             {
+                this.fE = new FileExtension();
                 bgw.RunWorkerAsync();
             }
         }
 
-        private void CancelAsync(object sender, RoutedEventArgs e)
+        private void CancelOperation(object sender, RoutedEventArgs e)
         {
             if (bgw.WorkerSupportsCancellation == true)
             {
                 bgw.CancelAsync();
+                this.fE.KillProcess();
+                IsFailedToComplete = true;
             }
         }
 
@@ -82,40 +110,57 @@ namespace DataUploader
             BackgroundWorker worker = sender as BackgroundWorker;
 
             //throw new InvalidOperationException(); //(!)Test
+            string fileExtension = System.IO.Path.GetExtension(this.filePath);
+
+            switch (fileExtension)
+            {
+                case ".zip":
+                    //Control.Invoke((MethodInvoker)(() => control.Text = "new text"));
+                    this.IsFailedToComplete = FileExtension.ExtractArchiveZip(this.filePath,
+                                                                              this.destinationPath + "/" + System.IO.Path.GetFileNameWithoutExtension(filePath));
+                    break;
+                case ".7z":
+                    this.IsFailedToComplete = fE.ExtractArchive7z(this.filePath,
+                                                                  this.destinationPath + "/" + System.IO.Path.GetFileNameWithoutExtension(filePath));
+                    break;
+                case ".dtl":
+                    this.IsFailedToComplete = fE.ConvertDtl(this.filePath,
+                                                                       this.destinationPath,
+                                                                       this.selectedCsvEncoding,
+                                                                       this.choosenFileFormat,
+                                                                       this.showMilisec);
+                    break;
+                case "":
+                    System.Windows.MessageBox.Show("Файл не выбран.",
+                                                   "Ошибка выбора файла",
+                                                   MessageBoxButton.OK,
+                                                   MessageBoxImage.Warning,
+                                                   MessageBoxResult.Yes);
+                    this.IsFailedToComplete = true;
+                    break;
+                default:
+                    System.Windows.MessageBox.Show("Расширение выбранного файла не соответствует следующим форматам:\n- *.zip\n- *.7z\n- *.dtl",
+                                                   "Ошибка",
+                                                   MessageBoxButton.OK,
+                                                   MessageBoxImage.Warning,
+                                                   MessageBoxResult.Yes);
+                    this.IsFailedToComplete = true;
+                    break;
+            }
+
             if (worker.CancellationPending == true)
             {
                 e.Cancel = true;
-            }
-            else
-            {
-                string fileExtension = System.IO.Path.GetExtension(this.filePath);
-
-                switch (fileExtension)
-                {
-                    case ".zip":
-                        this.IsFailedToExtract = FileExtension.ExtractArchiveZip(this.filePath, this.destinationPath);
-                        break;
-                    case ".7z":
-                        this.IsFailedToExtract = FileExtension.ExtractArchive7z(this.filePath, this.destinationPath);
-                        break;
-                    default:
-                        string messageBoxText = "Расширение архива не соответствует *.zip или *.7z";
-                        string caption = "Ошибка";
-                        System.Windows.MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
-                        break;
-                }
-
             }
         }
 
         private void BgwWorkCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
-
             if (e.Cancelled == true)
             {
                 this.Close();
             }
-            else if (e.Error != null)
+            else if (e.Error != null) // Если ошибка в BackGroundWorker
             {
                 meWaitingGif.Visibility = Visibility.Collapsed;
                 lbExtractStatus.Visibility = Visibility.Visible;
@@ -124,16 +169,21 @@ namespace DataUploader
                 btnCancel.Visibility = Visibility.Collapsed;
                 btnErrorClose.Visibility = Visibility.Visible;
             }
-            else if (IsFailedToExtract == false)
+            else if (IsFailedToComplete == false)
             {
                 meWaitingGif.Visibility = Visibility.Collapsed;
                 lbExtractStatus.Visibility = Visibility.Visible;
-                lbExtractStatus.Text = "Архив извлечён";
+                lbExtractStatus.Text = "Операция завершена";
                 btnCancel.Visibility = Visibility.Collapsed;
                 btnRunExplorer.Visibility = Visibility.Visible;
             }
             else
             {
+                System.Windows.MessageBox.Show("Операция не завершена",
+                                               "Ошибка",
+                                               MessageBoxButton.OK,
+                                               MessageBoxImage.Warning,
+                                               MessageBoxResult.Yes);
                 this.Close();
             }
         }
@@ -162,6 +212,48 @@ namespace DataUploader
         private void OpenFolder(object sender, RoutedEventArgs e)
         {
             Process.Start("explorer.exe", this.destinationPath.Replace("/", "\\"));
+            this.Close();
+        }
+
+        private void FormClosing(object sender, CancelEventArgs e)
+        {
+            if (bgw.IsBusy)
+            {
+                var r = System.Windows.MessageBox.Show("Вы уверены, что хотите прервать выполнение операции?",
+                                                       "Прервать операцию",
+                                                       MessageBoxButton.YesNo,
+                                                       MessageBoxImage.Warning,
+                                                       MessageBoxResult.Yes);
+                if (r == MessageBoxResult.Yes)
+                {
+                    if (System.IO.Path.GetExtension(filePath) == ".zip")
+                    {
+                        // Потому что *.zip архив извлекаетсыя не сторонним процессом, который...
+                        // ...можно убить, а местной функцией ExtractToDirectory
+                        System.Windows.MessageBox.Show("Прерывание операции извлечения *.zip архива не поддерживается.",
+                               "Ошибка прерывания операции",
+                               MessageBoxButton.OK,
+                               MessageBoxImage.Warning,
+                               MessageBoxResult.Yes);
+                        
+                        // Отменить закрытие окна
+                        e.Cancel = true;
+                    }
+                    else // Если выбранный файл не *.zip формата
+                    {
+                        if (bgw.WorkerSupportsCancellation == true)
+                        {
+                            bgw.CancelAsync();
+                            this.fE.KillProcess();
+                        }
+                    }
+                }
+                else // MessageBoxResult.No
+                {
+                    // Отменить закрытие окна
+                    e.Cancel = true;
+                }
+            }
         }
     }
 }

@@ -26,7 +26,13 @@ namespace DataUploader
     {
 
         public string filePath;
+        public string folderPath;
         public string destinationPath;
+        public string selectedCsvEncoding;
+        public string selectedFileOrFolder;
+        public string choosenInputFileFormat;
+        public string choosenOutputFileFormat;
+        public string showMilisec;
 
         public MainWindow()
         {
@@ -38,10 +44,13 @@ namespace DataUploader
             //this.destinationPath = Directory.GetCurrentDirectory();
             tbDestinationPath.Text = destinationPath;
 
-
-            //tbTest.Text = mW.ActualWidth.ToString(); // (!)Test
-            //FolderContent.ListContent(currentDirectory, lbFolderContent); // (!)Test
-            //System.Windows.MessageBox.Show(tbFilePath.Text); // (!)Test
+            // В ComboBox cmbFileOrFolder выбрать "Файл (для обработки единичного файла)"
+            cmbFileOrFolder.SelectedItem = cmbFileOrFolder.Items[0];
+            // Запрос того, что выбрано в элементе ComboBox cmbFileOrFolder
+            this.selectedFileOrFolder = (cmbFileOrFolder.SelectedItem as ComboBoxItem).Content.ToString();
+            // При запуске программы надо оставить элементы интерфейса, соотвествующие...
+            // выбранному пункту в ComboBox cmbFileOrFolder
+            FileExtension.DisableUiElementsFF(this, this.selectedFileOrFolder);
 
             // При запуске программы файл не выбран, следовательно надо все соотвествующие...
             // ...элементы интерфейса отключить
@@ -51,34 +60,56 @@ namespace DataUploader
         /// <summary>
         /// Обработка события Click в элементе Button btnBrowseFile "Обзор..."
         /// </summary>
-        private void ChooseFileDialog(object sender, RoutedEventArgs e)
+        private void ChooseFileOrFolderDialog(object sender, RoutedEventArgs e)
         {
-            Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
-            openFileDialog.Filter = "All files (*.*)|*.*" +
-                                    "|Excel files (*.xls)|*.xls" +
-                                    "|Excel files (*.xlsx)|*.xlsx";
-            if (openFileDialog.ShowDialog() == true)
+            // Запрос того, что выбрано в элементе ComboBox cmbFileOrFolder
+            this.selectedFileOrFolder = (cmbFileOrFolder.SelectedItem as ComboBoxItem).Content.ToString();
+            if (this.selectedFileOrFolder == "Файл (для обработки единичного файла)")
             {
-                string fileName = System.IO.Path.GetFileName(openFileDialog.FileName);
-                string fileExtension = System.IO.Path.GetExtension(openFileDialog.FileName);
+                Microsoft.Win32.OpenFileDialog openFileDialog = new Microsoft.Win32.OpenFileDialog();
+                openFileDialog.Filter = "All files (*.*)|*.*" +
+                                        "|Excel files (*.xls)|*.xls" +
+                                        "|Excel files (*.xlsx)|*.xlsx";
+                if (openFileDialog.ShowDialog() == true)
+                {
+                    string fileName = System.IO.Path.GetFileName(openFileDialog.FileName);
+                    string fileExtension = System.IO.Path.GetExtension(openFileDialog.FileName);
 
-                // Запись имени файла в TextBox tbFilePath
-                tbFilePath.Text = fileName;
-                this.filePath = openFileDialog.FileName;
-                FileExtension.SetRadioButtonState(fileExtension, this);
+                    // Запись имени файла в TextBox tbFilePath
+                    tbFileOrFolderPath.Text = fileName;
+                    this.filePath = openFileDialog.FileName;
+                    FileExtension.SetRadioButtonState(fileExtension, this);
+                }
             }
+            else // == "Директория (для пакетной обработки файлов в директории)"
+            {
+                string currentDirectory = Directory.GetCurrentDirectory();
+
+                System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
+                {
+                    dialog.Description = "Выберете директорию для обработки файлов, содержащихся в ней.";
+                    dialog.SelectedPath = currentDirectory;
+                    System.Windows.Forms.DialogResult result = dialog.ShowDialog();
+                    if (result == System.Windows.Forms.DialogResult.OK)
+                    {
+                        tbFileOrFolderPath.Text = dialog.SelectedPath;
+                        this.folderPath = dialog.SelectedPath;
+                    }
+                }
+            }
+
         }
 
         /// <summary>
         /// Обработка события Click в элементе Button btnBrowseDestination "Обзор..."
         /// </summary>
-        private void ChooseFolderDialog(object sender, RoutedEventArgs e)
+        private void ChooseDestinationFolderDialog(object sender, RoutedEventArgs e)
         {
             string currentDirectory = Directory.GetCurrentDirectory();
 
             System.Windows.Forms.FolderBrowserDialog dialog = new System.Windows.Forms.FolderBrowserDialog();
             {
-                dialog.Description = "Выберете директорию для извлечения архива.";
+                dialog.Description = "Выберете директорию для сохранения обработанных файлов.";
                 dialog.SelectedPath = currentDirectory;
                 System.Windows.Forms.DialogResult result = dialog.ShowDialog();
                 if (result == System.Windows.Forms.DialogResult.OK)
@@ -89,30 +120,35 @@ namespace DataUploader
             }
         }
 
-        // Обработка событий Checked на RadioButton'ах
+        // Обработка событий Checked на RadioButton'ах группы fileFormat
         private void CheckRbArchiveZip(object sender, RoutedEventArgs e)
         {
-            FileExtension.DisableUiElements(this, ".zip", false);
+            this.choosenInputFileFormat = ".zip";
+            FileExtension.DisableUiElements(this, this.choosenInputFileFormat, false);
         }
 
         private void CheckRbArchive7z(object sender, RoutedEventArgs e)
         {
-            FileExtension.DisableUiElements(this, ".7z", false);
+            this.choosenInputFileFormat = ".7z";
+            FileExtension.DisableUiElements(this, this.choosenInputFileFormat, false);
         }
 
         private void CheckRbDtl(object sender, RoutedEventArgs e)
         {
-            FileExtension.DisableUiElements(this, ".dtl", false);
+            this.choosenInputFileFormat = ".dtl";
+            FileExtension.DisableUiElements(this, this.choosenInputFileFormat, false);
         }
 
         private void CheckRbXls(object sender, RoutedEventArgs e)
         {
-            FileExtension.DisableUiElements(this, ".xls", false);
+            this.choosenInputFileFormat = ".xls";
+            FileExtension.DisableUiElements(this, this.choosenInputFileFormat, false);
         }
 
         private void CheckRbXlsx(object sender, RoutedEventArgs e)
         {
-            FileExtension.DisableUiElements(this, ".xlsx", false);
+            this.choosenInputFileFormat = ".xlsx";
+            FileExtension.DisableUiElements(this, this.choosenInputFileFormat, false);
         }
 
         /// <summary>
@@ -124,19 +160,108 @@ namespace DataUploader
             destinationPath = tbDestinationPath.Text;
         }
 
-        /// <summary>
-        /// Обработка события Click в элементе Button btnExtract.
-        /// Извлекает содержимое архива в папку
-        /// </summary>
-        private void ExtractArchive(object sender, RoutedEventArgs e)
+        // Обработка событий Checked на RadioButton'ах группы outputFileFormat
+        private void CheckXlsxFileFormat(object sender, RoutedEventArgs e)
         {
-            WaitingBox wb = new WaitingBox(this.filePath, this.destinationPath);
-            wb.ShowDialog();
+            this.choosenOutputFileFormat = ".xlsx";
         }
 
-        private void ConvertDtl(object sender, RoutedEventArgs e)
+        private void CheckXlsFileFormat(object sender, RoutedEventArgs e)
         {
+            this.choosenOutputFileFormat = ".xls";
+        }
 
+        private void CheckCsvFileFormat(object sender, RoutedEventArgs e)
+        {
+            this.choosenOutputFileFormat = ".csv";
+        }
+
+        // Обработка событий Checked/Unchecked в элементе CheckBox chbCsvShowMilisec
+        private void CheckShowMilisec(object sender, RoutedEventArgs e)
+        {
+            this.showMilisec = "/t1";
+        }
+
+        private void UncheckShowMilisec(object sender, RoutedEventArgs e)
+        {
+            this.showMilisec = "/t0";
+        }
+
+        /// <summary>
+        /// Обработка события Click в элементе Button btnStartProcess.
+        /// Извлекает содержимое архива в папку или запускает процесс конвертирования *.dtl файла.
+        /// </summary>
+        private void ProcessFileOrFolder(object sender, RoutedEventArgs e)
+        {
+            // Запрос того, что выбрано в элементе ComboBox cmbFileOrFolder
+            this.selectedFileOrFolder = (cmbFileOrFolder.SelectedItem as ComboBoxItem).Content.ToString();
+
+            if (this.selectedFileOrFolder == "Файл (для обработки единичного файла)")
+            {
+                ProcessFile();
+            }
+            else // == "Директория (для пакетной обработки файлов в директории)"
+            {
+                this.destinationPath = "D:/Sergei/TEMP/temp/test/dtls"; // (!)Test
+                this.folderPath = "D:/Sergei/TEMP/temp/test/dtls"; // (!)Test
+
+                string[] filesInFolder = Directory.GetFiles(this.folderPath);
+                bool dtlFilesNotfound = true;
+
+                for (int i = 0; i < filesInFolder.Length; i++)
+                {
+                    if (System.IO.Path.GetExtension(filesInFolder[i]) == ".dtl")
+                    {
+                        dtlFilesNotfound = false;
+                        // ToDo
+
+                    }
+                }
+                if (dtlFilesNotfound)
+                {
+                    System.Windows.MessageBox.Show("В выранной директории не обнаружено файлов формата *.dtl",
+                               "Ошибка",
+                               MessageBoxButton.OK,
+                               MessageBoxImage.Warning,
+                               MessageBoxResult.Yes);
+                }
+            }
+
+            /// <summary>
+            /// Запуск процесса обработки одного файла
+            /// /// </summary>
+            void ProcessFile()
+            {
+                // Запрос того, что выбрано в элементе ComboBox cmbCsvEncoding
+                this.selectedCsvEncoding = (cmbCsvEncoding.SelectedItem as ComboBoxItem).Content.ToString();
+
+                if (System.IO.Path.GetExtension(filePath) == this.choosenInputFileFormat)
+                {
+                    WaitingBox wb = new WaitingBox(this.filePath,
+                                                   this.destinationPath,
+                                                   this.selectedCsvEncoding,
+                                                   this.choosenOutputFileFormat,
+                                                   this.showMilisec);
+                    wb.ShowDialog();
+                    // Удалить экземпляр, т.к. больше не нужен
+                    wb = null;
+                }
+                else
+                {
+                    System.Windows.MessageBox.Show("Файл не выбран или явное расширение выбранного файла не соответствует формату, выбранному пользователем.",
+                                   "Ошибка",
+                                   MessageBoxButton.OK,
+                                   MessageBoxImage.Warning,
+                                   MessageBoxResult.Yes);
+                }
+            }
+        }
+
+        private void FileOrFolderSelected(object sender, SelectionChangedEventArgs e)
+        {
+            // Запрос того, что выбрано в элементе ComboBox cmbFileOrFolder
+            this.selectedFileOrFolder = (cmbFileOrFolder.SelectedItem as ComboBoxItem).Content.ToString();
+            FileExtension.DisableUiElementsFF(this, this.selectedFileOrFolder);
         }
     }
 }

@@ -5,9 +5,9 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DataUploader"
         ResizeMode="NoResize"
-        Title="Извлечение архива" Height="140" Width="200" HorizontalAlignment="Left" VerticalAlignment="Top" Icon="/Properties/unpack_96.png" Margin="0,0,0,0">
+        Title="Выполнение операции" Height="140" Width="200" HorizontalAlignment="Left" VerticalAlignment="Top" Icon="/Properties/unpack_96.png" Margin="0,0,0,0" Closing="FormClosing">
     <Grid VerticalAlignment="Top">
-        <Button x:Name="btnCancel" Content="Отмена" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="20" Click="CancelAsync" Margin="0,68,0,0"/>
+        <Button x:Name="btnCancel" Content="Отмена" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="20" Click="CancelOperation" Margin="0,68,0,0"/>
         <Button x:Name="btnRunExplorer" Width="32" HorizontalAlignment="Center" VerticalAlignment="Top" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="{x:Null}" ToolTip="Открыть в Проводнике" Height="32" Margin="0,62,0,0" Click="OpenFolder">
             <Image Source="/Properties/file_explorer_96.png" HorizontalAlignment="Center" VerticalAlignment="Center">
                 <Image.Style>
