@@ -1,0 +1,235 @@
+﻿<Window x:Name="mW" x:Class="DataUploader.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DataUploader"
+        mc:Ignorable="d"
+        Title="DataUploader 1.0.0.0" MinWidth="325" Width="440" MinHeight="65" Height="640" WindowStartupLocation="CenterScreen">
+    <Window.Resources>
+        <local:UploadedFilesListViewHeightConverter x:Key="listviewheightconverter"></local:UploadedFilesListViewHeightConverter>
+    </Window.Resources>
+
+    <Grid>
+        <TabControl>
+            <TabItem Header="Импорт данных">
+                <Grid>
+
+                    <StackPanel VerticalAlignment="Top" Margin="20,10,20,0">
+                        <TextBlock HorizontalAlignment="Left" Margin="0,0,0,5" TextWrapping="NoWrap" Text="Выберете опцию обработки:" VerticalAlignment="Top" FontWeight="Normal"/>
+                        <ComboBox x:Name="cmbFileOrFolder" HorizontalAlignment="Stretch" Margin="0,0,0,5" VerticalAlignment="Top" ToolTip="Выберете 'Файл' для обработки единичного файла или 'Директория' для пакетной обработки файлов в директории." SelectionChanged="FileOrFolderSelected">
+                            <ComboBoxItem Content="Файл (для обработки одного файла: *.zip, *.7z, *.dtl, *.xlsx)" Tag="file"/>
+                            <ComboBoxItem Content="Директория (для пакетной обработки *.dtl файлов в директории)" Tag="folder"/>
+                        </ComboBox>
+                        <DockPanel VerticalAlignment="Top" Margin="0,0,0,0" LastChildFill="True">
+                            <Button x:Name="btnBrowseFile" Content="Обзор..." Margin="10,0,0,0" VerticalAlignment="Top" Click="ChooseFileOrFolderDialog" RenderTransformOrigin="0.371,-0.349" Width="90" DockPanel.Dock="Right"/>
+                            <TextBox x:Name="tbFileOrFolderPath" HorizontalAlignment="Stretch" Margin="0,0,0,0" TextWrapping="NoWrap" Text="Файл не выбран" VerticalAlignment="Top" Height="19.96"/>
+                        </DockPanel>
+                    </StackPanel>
+
+                    <GroupBox Header="Формат файла" Margin="21,83,19,0" VerticalAlignment="Top">
+                        <StackPanel VerticalAlignment="Top" Margin="10,5,10,5" Orientation="Horizontal">
+                            <RadioButton x:Name="rbArchive" Content="Архив (*.zip, *.7z)" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" GroupName="fileFormat" IsHitTestVisible="False"/>
+                            <RadioButton x:Name="rbDtl" Content="*.dtl" HorizontalAlignment="Left" Margin="70,0,0,0" VerticalAlignment="Top" GroupName="fileFormat" IsHitTestVisible="False" />
+                            <RadioButton x:Name="rbXlsx" Content="*.xlsx" HorizontalAlignment="Left" Margin="70,0,0,0" VerticalAlignment="Top" GroupName="fileFormat" IsHitTestVisible="False"/>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Параметры конвертирования *.dtl файла" Margin="20,136,20,0" VerticalAlignment="Top">
+                        <DockPanel VerticalAlignment="Top" Margin="10,5,10,5">
+                            <StackPanel VerticalAlignment="Top" Margin="0,0,0,0" HorizontalAlignment="Left">
+                                <RadioButton x:Name="rbXlsxFileFormat" Content="*.xlsx" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" GroupName="outputFileFormat" IsChecked="True" Checked="CheckXlsxFileFormat"/>
+                                <RadioButton x:Name="rbXlsFileFormat" Content="*.xls" HorizontalAlignment="Left" Margin="0,9,0,0" VerticalAlignment="Top" GroupName="outputFileFormat" Checked="CheckXlsFileFormat"/>
+                                <RadioButton x:Name="rbCsvFileFormat" Content="*.csv" HorizontalAlignment="Left" Margin="0,9,0,0" VerticalAlignment="Top" GroupName="outputFileFormat" Checked="CheckCsvFileFormat" />
+                            </StackPanel>
+                            <StackPanel VerticalAlignment="Top" Margin="20,0,0,0" DockPanel.Dock="Right">
+                                <TextBlock HorizontalAlignment="Left" TextWrapping="NoWrap" Text="Кодировка (при экспорте файла *.csv)" VerticalAlignment="Top" FontWeight="Normal" Background="White" TextAlignment="Center" Margin="0,0,0,0"/>
+                                <ComboBox x:Name="cmbCsvEncoding" HorizontalAlignment="Stretch" Margin="0,5,0,0" VerticalAlignment="Top" SelectionChanged="EncodingSelected">
+                                    <ComboBoxItem Content="ASCII"/>
+                                    <ComboBoxItem Content="UTF-8"/>
+                                    <ComboBoxItem Content="Unicode"/>
+                                </ComboBox>
+                                <CheckBox x:Name="chbCsvShowMilisec" Content="Добавлять миллисекунды в формат времени" HorizontalAlignment="Left" Margin="0,5,0,0" VerticalAlignment="Top" Checked="CheckShowMilisec" Unchecked="UncheckShowMilisec" IsChecked="True"/>
+                            </StackPanel>
+                        </DockPanel>
+                    </GroupBox>
+
+                    <StackPanel VerticalAlignment="Top" Margin="20,237,20,0">
+                        <TextBlock x:Name="tbChooseDir" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" FontWeight="Normal" Visibility="Visible" Text="Выберете директорию назначения:"/>
+                        <DockPanel VerticalAlignment="Top" Margin="0,0,0,0">
+                            <Button x:Name="btnStartProcess" Margin="10,0,0,0" Width="32" HorizontalAlignment="Left" VerticalAlignment="Center" Background="{x:Null}" Foreground="{x:Null}" ToolTip="Извлечь содержимое архива" Click="ProcessFileOrFolder" Height="32" BorderBrush="{x:Null}" DockPanel.Dock="Right">
+                                <Image x:Name="imgExtractBtn" Source="/Properties/unpack_96.png" Margin="0,0,0,0">
+                                    <Image.Style>
+                                        <Style TargetType="{x:Type Image}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.5" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                            <Button x:Name="btnBrowseDestination" Content="Обзор..." HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center" Click="ChooseDestinationFolderDialog" ToolTip="Выберете директорию для сохранения обработанных файлов" MinWidth="90" DockPanel.Dock="Right"/>
+                            <TextBox x:Name="tbDestinationPath" HorizontalAlignment="Stretch" Margin="0,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="ChangedByInput" />
+                        </DockPanel>
+                    </StackPanel>
+
+                    <GroupBox Header="Выбор параметров принадлежности:" Margin="20,295,20,0" VerticalAlignment="Top">
+                        <StackPanel VerticalAlignment="Top" Margin="10,5,10,5">
+                            <DockPanel LastChildFill="True" Margin="0,0,0,0">
+                                <TextBlock Text="Категория:" Margin="0,0,0,0"/>
+                                <TextBox x:Name="tbSelectedCategory" Margin="10,0,0,0" TextWrapping="NoWrap" Text="Не выбрано" VerticalAlignment="Top" HorizontalContentAlignment="Stretch" Height="19.96" HorizontalAlignment="Stretch" IsReadOnly="True"/>
+                            </DockPanel>
+                            <DockPanel LastChildFill="True" Margin="0,5,0,0">
+                                <TextBlock Text="Тип файла:" Margin="0,0,0,0"/>
+                                <TextBox x:Name="tbSelectedFileType" HorizontalAlignment="Stretch" Margin="10,0,0,0" TextWrapping="NoWrap" Text="Не выбрано" VerticalAlignment="Top" Height="19.96" IsReadOnly="True"/>
+                            </DockPanel>
+                            <Button Content="Выбрать..." HorizontalAlignment="Left" VerticalAlignment="Top" MinWidth="90" Click="OpenCategoryTreeForm" Margin="0,10,0,0"/>
+                            <DockPanel LastChildFill="True" Margin="0,10,0,0">
+                                <TextBlock Text="Подстанция:" Margin="0,0,0,0"/>
+                                <TextBox x:Name="tbSelectedSubstation" Margin="10,0,0,0" TextWrapping="NoWrap" Text="Не выбрано" VerticalAlignment="Top" HorizontalContentAlignment="Stretch" Height="19.96" HorizontalAlignment="Stretch" IsReadOnly="True"/>
+                            </DockPanel>
+                            <DockPanel LastChildFill="True" Margin="0,5,0,0">
+                                <TextBlock Text="Трансформатор:" Margin="0,0,0,0"/>
+                                <TextBox x:Name="tbSelectedTransformer" HorizontalAlignment="Stretch" Margin="10,0,0,0" TextWrapping="NoWrap" Text="Не выбрано" VerticalAlignment="Top" Height="19.96" IsReadOnly="True"/>
+                            </DockPanel>
+                            <DockPanel LastChildFill="True" Margin="0,5,0,0">
+                                <TextBlock Text="Фаза напряжения:" Margin="0,0,0,0"/>
+                                <ComboBox x:Name="cmbPhase" HorizontalAlignment="Stretch" Margin="10,0,0,0" VerticalAlignment="Top" Height="19.96" IsReadOnly="True" SelectionChanged="PhaseSelected">
+                                    <ComboBoxItem Content="A"/>
+                                    <ComboBoxItem Content="B"/>
+                                    <ComboBoxItem Content="C"/>
+                                </ComboBox>
+                            </DockPanel>
+                            <Button Content="Выбрать..." HorizontalAlignment="Left" VerticalAlignment="Top" MinWidth="90" Click="OpenSubstationTreeForm" Margin="0,10,0,0"/>
+
+                        </StackPanel>
+                    </GroupBox>
+
+                    <Button x:Name="btnImportToDB" Margin="20,523,20,0" VerticalAlignment="Top" ToolTip="Импортировать содержание выбранного файла (архива) в базу данных" Height="34" BorderThickness="1.5" Click="ImportToDB">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="0"/>
+                            </Style>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal">
+                            <Image Source="/Properties/database_import_96.png">
+                                <Image.Style>
+                                    <Style TargetType="{x:Type Image}">
+                                        <Style.Triggers>
+                                            <Trigger Property="IsEnabled" Value="False">
+                                                <Setter Property="Opacity" Value="0.5" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Image.Style>
+                            </Image>
+                            <TextBlock Text="Импортировать в БД" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                        </StackPanel>
+                    </Button>
+
+                </Grid>
+            </TabItem>
+            <TabItem Header="Параметры доступа к БД">
+                <Grid>
+
+                    <GroupBox Header="Параметры сервера" Margin="20,5,20,0" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                        <StackPanel VerticalAlignment="Top" Margin="10,5,10,5">
+                            <DockPanel LastChildFill="True" Margin="0,0,0,0">
+                                <TextBlock TextWrapping="NoWrap" Text="IP-адрес хоста:" DockPanel.Dock="Left" VerticalAlignment="Top" Margin="0,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="tbServerIP" TextWrapping="NoWrap" DockPanel.Dock="Left" VerticalAlignment="Top" Margin="10,0,0,0" HorizontalAlignment="Stretch" Width="165" TextChanged="ServerIpChanged"/>
+                                <TextBlock TextWrapping="NoWrap" Text="Порт:" DockPanel.Dock="Left" VerticalAlignment="Top" Margin="10,0,0,0" HorizontalAlignment="Left"/>
+                                <TextBox x:Name="tbServerPort" TextWrapping="NoWrap" DockPanel.Dock="Left" VerticalAlignment="Top" Margin="10,0,0,0" HorizontalAlignment="Stretch" TextChanged="ServerPortChanged"/>
+                            </DockPanel>
+                            <DockPanel LastChildFill="True" Margin="0,5,0,0">
+                                <TextBlock HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="NoWrap" Text="Имя базы данных:" VerticalAlignment="Top"/>
+                                <TextBox x:Name="tbDatabaseName" TextWrapping="NoWrap" VerticalAlignment="Top" HorizontalContentAlignment="Stretch" Margin="10,0,0,0" TextChanged="DatabaseNameChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Аутентификация" Margin="20,84,20,0" VerticalAlignment="Top">
+                        <StackPanel VerticalAlignment="Top" Margin="10,5,10,5">
+                            <DockPanel LastChildFill="True" Margin="0,0,0,0">
+                                <TextBlock HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" Text="Логин:" VerticalAlignment="Top"/>
+                                <TextBox x:Name="tbLogin" Margin="10,0,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" TextChanged="LoginChanged"/>
+                            </DockPanel>
+                            <DockPanel LastChildFill="True" Margin="0,5,0,0">
+                                <TextBlock HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" Text="Пароль:" VerticalAlignment="Top"/>
+                                <PasswordBox x:Name="tbPassword" Margin="10,0,0,0" VerticalAlignment="Top" PasswordChanged="PasswordChanged"/>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+
+                    <GroupBox Header="Подключение" VerticalAlignment="Top" Margin="20,204,20,0">
+                        <StackPanel Margin="10,5,10,5" VerticalAlignment="Top">
+                            <DockPanel Margin="0,0,0,0" VerticalAlignment="Top" MinWidth="250">
+                                <TextBlock HorizontalAlignment="Left" TextWrapping="NoWrap" Text="Состояние:" DockPanel.Dock="Left" VerticalAlignment="Top"/>
+                                <TextBlock x:Name="tbConnectionStatus" TextWrapping="NoWrap" Text="Не подключено" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Top"/>
+                            </DockPanel>
+                            <Button x:Name="btnTestConnection" Content="Тест соединения..." HorizontalAlignment="Left" VerticalAlignment="Top" MinWidth="120" Margin="0,10,0,0" Click="ConnectToDbAsync" />
+                        </StackPanel>
+                    </GroupBox>
+
+                    <Button Margin="21,168,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" ToolTip="Сохранить настройки подключения" Click="SaveConnectionSettings" Content="Сохранить настройки..." VerticalContentAlignment="Top" HorizontalContentAlignment="Center" Width="150"/>
+
+                </Grid>
+            </TabItem>
+            <TabItem Header="Журнал">
+                <Grid x:Name="grid">
+                    <DockPanel x:Name="dockPanel" Margin="20,5,20,20" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+                        <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" DockPanel.Dock="Right" Margin="10,0,0,0">
+                            <Button x:Name="btnUpdateTable" HorizontalAlignment="Left" Margin="0,43.96,0,0" Background="{x:Null}" BorderBrush="{x:Null}" Width="24" ToolTip="Обновить журнал" VerticalAlignment="Top" Click="UpdateTableAsync">
+                                <Image Source="/Properties/update_48.png">
+                                    <Image.Style>
+                                        <Style TargetType="{x:Type Image}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.5" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                            <Button x:Name="btnDeleteItem" HorizontalAlignment="Left" Margin="0,10,0,0" Background="{x:Null}" BorderBrush="{x:Null}" Width="24" Click="DeleteUploadedFileAsync" ToolTip="Удалить выбранный элемент" VerticalAlignment="Top">
+                                <Image Source="/Properties/remove_42.png">
+                                    <Image.Style>
+                                        <Style TargetType="{x:Type Image}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.5" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                        </StackPanel>
+
+                        <StackPanel x:Name="stackPanel" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Журнал файлов, загруженных в базу данных:" HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                            <ListView x:Name="lvUploadedFiles" Margin="0,5,0,0" MinWidth="50" FontSize="10" HorizontalAlignment="Stretch" Height="{Binding ElementName=dockPanel, Path=ActualHeight, Converter={StaticResource listviewheightconverter}}">
+                                <ListView.View>
+                                    <GridView AllowsColumnReorder="true">
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=DateTime}" Header="Дата загрузки"/>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=FileName}">Имя файла</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=Substation}">Подстанция</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=Transformer}">Трансформатор</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=Phase}">Фаза</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=Category}">Категория</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=FileType}">Тип файла</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=RecordsNum}">Кол-во связанных записей</GridViewColumn>
+                                    </GridView>
+                                </ListView.View>
+                            </ListView>
+                        </StackPanel>
+
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>

@@ -1,0 +1,29 @@
+﻿<Window x:Class="DataUploader.WaitingBox"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DataUploader"
+        ResizeMode="NoResize"
+        Title="Выполнение операции" Height="145" Width="200" HorizontalAlignment="Left" VerticalAlignment="Top" Icon="/Properties/process_96.png" Margin="0,0,0,0" Closing="FormClosing" WindowStartupLocation="CenterOwner">
+    <Grid VerticalAlignment="Stretch">
+        <Button x:Name="btnCancel" Content="Отмена" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="20" Click="CancelOperation" Margin="0,68,0,0"/>
+        <Button x:Name="btnClose" Content="Закрыть" HorizontalAlignment="Center" VerticalAlignment="Top" Width="68" Height="20" Click="CloseForm" Margin="0,68,0,0"/>
+        <Button x:Name="btnRunExplorer" Width="32" HorizontalAlignment="Center" VerticalAlignment="Top" Background="{x:Null}" BorderBrush="{x:Null}" Foreground="{x:Null}" ToolTip="Открыть в Проводнике" Height="32" Margin="0,62,0,0" Click="OpenFolder" IsDefault="True">
+            <Image Source="/Properties/file_explorer_96.png" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <Image.Style>
+                    <Style TargetType="Image">
+                        <Style.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Image.Style>
+            </Image>
+        </Button>
+        <MediaElement x:Name="meWaitingGif" UnloadedBehavior="Manual" LoadedBehavior="Play" MediaEnded="GifEnded" Stretch="Fill" Height="48" Width="48" Visibility="Visible" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,10,0,0"/>
+        <TextBlock x:Name="lbProcessStatus" HorizontalAlignment="Center" Margin="0,20,0,0" TextWrapping="Wrap" Text="TextBlock" VerticalAlignment="Top" MaxWidth="180" MaxHeight="38" FontStretch="Normal" TextAlignment="Center" TextTrimming="WordEllipsis"/>
+
+    </Grid>
+</Window>

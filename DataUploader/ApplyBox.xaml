@@ -1,0 +1,18 @@
+﻿<Window x:Class="DataUploader.ApplyBox"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:DataUploader"
+        mc:Ignorable="d"
+        Title="Добавление элемента" HorizontalAlignment="Left" VerticalAlignment="Top" ResizeMode="NoResize" SizeToContent="WidthAndHeight" WindowStartupLocation="CenterOwner" Closing="FormClosing" Icon="/Properties/add_48.png">
+    <Grid>
+        <StackPanel Margin="20,5,20,20" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <TextBlock Text="Введите название узла:"/>
+            <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                <TextBox x:Name="tbTypedNodeName" Text="" Width="150" VerticalAlignment="Top" Height="19.96"/>
+                <Button x:Name="btnApplyNodeName" Content="Добавить..." Margin="10,0,0,0" Click="ApplyNodeName" IsDefault="True"/>
+            </StackPanel>
+        </StackPanel>
+    </Grid>
+</Window>
