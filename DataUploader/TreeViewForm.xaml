@@ -12,7 +12,7 @@
 
                 <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top">
                     <TextBlock Text="Выберите вложенный элемент:" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                    <TreeView x:Name="treeView" Margin="0,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" MinHeight="100" MinWidth="200" MaxHeight="150" SelectedItemChanged="SelectItem">
+                    <TreeView x:Name="tvNodes" Margin="0,5,0,0" HorizontalAlignment="Left" VerticalAlignment="Top" MinHeight="100" MinWidth="200" MaxHeight="150" SelectedItemChanged="SelectItem">
                         <TreeView.ItemTemplate>
                             <HierarchicalDataTemplate ItemsSource="{Binding Childs}">
                                 <TextBlock Text="{Binding Name}" Tag="{Binding Id}"/>

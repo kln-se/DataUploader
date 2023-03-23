@@ -61,7 +61,7 @@ namespace DataUploader
                 // Добавляем узлы в TreeView
                 foreach (DataModel.Node n in parentsList)
                 {
-                    treeView.Items.Add(n);
+                    tvNodes.Items.Add(n);
                 }
             }
         }
@@ -79,7 +79,7 @@ namespace DataUploader
             btnDeleteItem.IsEnabled = true;
             try
             {
-                _selectedTreeViewItem = treeView.SelectedItem as DataModel.Node;
+                _selectedTreeViewItem = tvNodes.SelectedItem as DataModel.Node;
 
                 if (_selectedTreeViewItem.Parent == null)
                 {
@@ -112,21 +112,21 @@ namespace DataUploader
         /// </summary>
         private async void AddParentItemAsync(object sender, RoutedEventArgs e)
         {
-            var ab = new ApplyBox();
-            ab.Owner = this;
-            var result = ab.ShowDialog();
+            var tnb = new TypeNameForm();
+            tnb.Owner = this;
+            var result = tnb.ShowDialog();
             
             // false -> окно закрылось, можно считывать поля
             if (result == false)
             {
-                string nodeName = ab.TypedNodeName;
+                string nodeName = tnb.TypedName;
 
                 if (nodeName != null)
                 {
                     int? insertedNodeId = await DataUploader.DataContext.InsertNodeAsync(_queryType, nodeName);
                     if (insertedNodeId != null)
                     {
-                        treeView.Items.Add(new DataModel.Node() { Name = nodeName, Id = insertedNodeId, Parent = null });
+                        tvNodes.Items.Add(new DataModel.Node() { Name = nodeName, Id = insertedNodeId, Parent = null });
                     }
                 }
             }
@@ -137,14 +137,14 @@ namespace DataUploader
         /// </summary>
         private async void AddChildItemAsync(object sender, RoutedEventArgs e)
         {
-            var ab = new ApplyBox();
+            var ab = new TypeNameForm();
             ab.Owner = this;
             var result = ab.ShowDialog();
 
             // false -> окно закрылось, можно считывать поля
             if (result == false)
             {
-                string nodeName = ab.TypedNodeName;
+                string nodeName = ab.TypedName;
 
                 if (nodeName != null)
                 {
@@ -169,7 +169,7 @@ namespace DataUploader
                 // Если это корневой элемент
                 if (_selectedTreeViewItem.Parent == null)
                 {
-                    treeView.Items.Remove(_selectedTreeViewItem);
+                    tvNodes.Items.Remove(_selectedTreeViewItem);
                 }
                 // Дочерний элемент
                 else
@@ -185,7 +185,7 @@ namespace DataUploader
         /// </summary>
         private void ApplySelectedItem(object sender, RoutedEventArgs e)
         {
-            var tvSelectedItem = treeView.SelectedItem as DataModel.Node;
+            var tvSelectedItem = tvNodes.SelectedItem as DataModel.Node;
 
             SelectedParentName = tvSelectedItem.Parent.Name;
             SelectedChildName = tvSelectedItem.Name;

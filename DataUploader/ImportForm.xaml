@@ -1,4 +1,4 @@
-﻿<Window x:Name="window" x:Class="DataUploader.ImportBox"
+﻿<Window x:Name="window" x:Class="DataUploader.ImportForm"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -12,8 +12,7 @@
     </Window.Resources>
 
     <Grid x:Name="grid">
-        <StackPanel x:Name="stackpanel" HorizontalAlignment="Stretch" Margin="10,5,10,10">
-            
+        <StackPanel x:Name="stackpanel" HorizontalAlignment="Stretch" Margin="20,10,20,20">
 
             <ListView x:Name="lvImportedFiles" Margin="0,5,0,0" HorizontalAlignment="Stretch" FontSize="10" MinHeight="120" Height="{Binding ElementName=stackpanel, Path=ActualHeight, Converter={StaticResource listviewheightconverter}}">
                 <ListView.View>
@@ -21,13 +20,13 @@
                         <GridViewColumn DisplayMemberBinding="{Binding Path=Id}" Header="№" Width="30"/>
                         <GridViewColumn DisplayMemberBinding="{Binding Path=FileName}" Header="Имя файла"/>
                         <GridViewColumn DisplayMemberBinding="{Binding Path=ProcessStatus}" Header="Статус"/>
-                        <GridViewColumn DisplayMemberBinding="{Binding Path=IntersectionsCount}" Header="Перезаписано строк"/>
+                        <GridViewColumn DisplayMemberBinding="{Binding Path=IntersectionsCount}" Header="Обнаружено существующих строк"/>
                         <GridViewColumn DisplayMemberBinding="{Binding Path=ErrorMessage}" Header="Сообщение" Width="150"/>
                     </GridView>
                 </ListView.View>
             </ListView>
             <ProgressBar x:Name="pbImportProgress" Height="12" Margin="0,5,0,0" VerticalAlignment="Top" HorizontalAlignment="Stretch"/>
-            <TextBlock x:Name="lbImportStatus" HorizontalAlignment="Center" Margin="0,-13,0,0" TextWrapping="Wrap" Text="Операция завершена" VerticalAlignment="Top" MaxWidth="180" MaxHeight="38" FontStretch="Normal" TextAlignment="Center" TextTrimming="WordEllipsis" Grid.ColumnSpan="2" FontSize="9"/>
+            <TextBlock x:Name="lbImportStatus" HorizontalAlignment="Center" Margin="0,-12,0,0" TextWrapping="Wrap" Text="Операция завершена" VerticalAlignment="Top" MaxWidth="180" MaxHeight="38" FontStretch="Normal" TextAlignment="Center" TextTrimming="WordEllipsis" Grid.ColumnSpan="2" FontSize="9"/>
             <DockPanel Margin="0,5,0,0">
                 <TextBlock x:Name="tbPercentCompleted" HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="Wrap" Text="Выполнено 0%" VerticalAlignment="Top" FontSize="10"/>
                 <TextBlock x:Name="tbTimePassed" HorizontalAlignment="Right" Margin="0,0,0,0" TextWrapping="Wrap" Text="00:00:00" VerticalAlignment="Top" FontSize="10" DockPanel.Dock="Right"/>

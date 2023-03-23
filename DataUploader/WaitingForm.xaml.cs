@@ -24,7 +24,7 @@ namespace DataUploader
     /// <summary>
     /// Логика взаимодействия для WaitingBox.xaml
     /// </summary>
-    public partial class WaitingBox : Window
+    public partial class WaitingForm : Window
     {
 
         // Для выполнения операции извлечения архива, конвертирования файла в отдельном потоке
@@ -42,23 +42,28 @@ namespace DataUploader
         private int? _fileTypeId;
         private int? _transformerId;
         private string _phase;
+        private bool _averagingIsEnabled;
+        private int _selectedAveragingRange;
+
+        // Для реализации отмены работы bgw без необходимости передачи экземпляра bgw в функции
+        private BackgroundWorker _worker = null;
+        private DoWorkEventArgs _e = null;
 
         // В каком режиме запускается это окно:
         // * по умолчанию null - при конвертации/разархивации файлов
         // * "import" - при импорте содержимого файла в базу данных
         private string _mode;
 
+        public bool _isConverted = false;
         private bool _isCompleted = false;
         private bool _importIsCompleted = false;
-
-        //private delegate bool ThreadStart();
 
         public bool ImportIsCompleted
         {
             get { return _importIsCompleted; }
         }
 
-        public WaitingBox(string filePath,
+        public WaitingForm(string filePath,
                           string destinationPath = null,
                           string selectedCsvEncoding = null,
                           string choosenOutputFileFormat = null,
@@ -66,7 +71,9 @@ namespace DataUploader
                           int? fileTypeId = null,
                           int? transformerId = null,
                           string phase = null,
-                          string mode = null)
+                          string mode = null,
+                          bool averagingIsEnabled = true,
+                          int selectedAveragingRange = 30)
         {
             InitializeComponent();
 
@@ -79,13 +86,15 @@ namespace DataUploader
             _transformerId = transformerId;
             _phase = phase;
             _mode = mode;
+            _averagingIsEnabled = averagingIsEnabled;
+            _selectedAveragingRange = selectedAveragingRange;
 
             InitializeUIelements();
             InitializeBackgroundWorker();
 
             // Сделать кнопку "отмена" неактивной, т.к. при извлечении *.zip архива запускается...
             // ...функция, а не процесс, который можно убить
-            if (System.IO.Path.GetExtension(filePath) == ".zip" || System.IO.Path.GetExtension(filePath) == ".xlsx")
+            if (System.IO.Path.GetExtension(filePath) == ".zip")
             {
                 btnCancel.IsEnabled = false;
             }
@@ -93,68 +102,24 @@ namespace DataUploader
             StartAsync();
         }
 
+        private void InitializeUIelements()
+        {
+            meWaitingGif.Source = new Uri(Directory.GetCurrentDirectory() + @"\Properties\wait.gif");
+            btnRunExplorer.Visibility = Visibility.Hidden;
+            btnClose.Visibility = Visibility.Hidden;
+            tbProcessStatus.Visibility = Visibility.Hidden;
+        }
+
+        // ----------------------------------------------------------------------------------------
+        // Background worker
+        // ----------------------------------------------------------------------------------------
+
         private void InitializeBackgroundWorker()
         {
             _bgw.WorkerSupportsCancellation = true;
 
             _bgw.DoWork += new DoWorkEventHandler(BgwDoWork);
             _bgw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BgwWorkCompleted);
-        }
-
-        private void InitializeUIelements()
-        {
-            meWaitingGif.Source = new Uri(Directory.GetCurrentDirectory() + @"\Properties\wait.gif");
-            btnRunExplorer.Visibility = Visibility.Hidden;
-            btnClose.Visibility = Visibility.Hidden;
-            lbProcessStatus.Visibility = Visibility.Hidden;
-        }
-
-        /// <summary>
-        /// Нанинает цепочку действий для импорта содержимого файла.
-        /// </summary>
-        /// <returns>Импорт выполнен успешно (true), неуспешно (false)</returns>
-        private bool StartImportFile(string filePath)
-        {
-            Dictionary<string, int> fieldsMap = DataUploader.DataContext.GetFields(_fileTypeId);
-            Dictionary<string, int> fieldsMapComplemented = null;
-            List<DataModel.Measurement> measurementsList = null;
-            ulong? updatedRows = null;
-            int? intersectionsCount = null;
-            
-            if (fieldsMap != null)
-            {
-                fieldsMapComplemented = FileExtension.CheckMissingFields(filePath, (int)_fileTypeId, fieldsMap);
-            }
-
-            measurementsList = FileExtension.ParseExcelFile(filePath, fieldsMapComplemented, (int)_transformerId, _phase, new TimeSpan(0, 15, 0));
-            updatedRows = DataUploader.DataContext.InsertBinary(measurementsList);
-            intersectionsCount = DataUploader.DataContext.СheckIntersections();
-            
-            if (intersectionsCount == 0)
-            {
-                return DataUploader.DataContext.TransferTempData(_filePath);
-            }
-            else if (intersectionsCount > 0)
-            {
-                var r = MessageBox.Show(string.Format("Найдено существующих записей: {0}\nПерезаписать значения?", intersectionsCount),
-                                        "Найдены существующие записи",
-                                        MessageBoxButton.YesNo,
-                                        MessageBoxImage.Warning,
-                                        MessageBoxResult.Yes);
-
-                if (r == MessageBoxResult.Yes)
-                {
-                    return DataUploader.DataContext.TransferTempData(_filePath, true);
-                }
-                else
-                {
-                    return DataUploader.DataContext.TransferTempData(_filePath);
-                }
-            }
-            else
-            {
-                return false;
-            }
         }
 
         private void StartAsync()
@@ -167,7 +132,8 @@ namespace DataUploader
 
         private void BgwDoWork(object sender, DoWorkEventArgs e)
         {
-            BackgroundWorker worker = sender as BackgroundWorker;
+            _worker = sender as BackgroundWorker;
+            _e = e;
 
             string fileExtension = Path.GetExtension(_filePath);
 
@@ -179,8 +145,8 @@ namespace DataUploader
                         if (_mode == null)
                         {
                             _destinationPath = Path.Combine(_destinationPath, Path.GetFileNameWithoutExtension(_filePath));
-                            //_isCompleted = new Thread(FileExtension.ExtractArchiveZip(_filePath, _destinationPath));
-                            
+
+                            DelegateShowProcessStage("⌛ (Извлечение *.zip архива)");
                             _isCompleted = FileExtension.ExtractArchiveZip(_filePath, _destinationPath);
                         }
                         else
@@ -197,8 +163,8 @@ namespace DataUploader
                         if (_mode == null)
                         {
                             _destinationPath = Path.Combine(_destinationPath, Path.GetFileNameWithoutExtension(_filePath));
-                            _isCompleted = _fe.ExtractArchive7za(_filePath,
-                                                                 _destinationPath);
+                            DelegateShowProcessStage("⌛ (Извлечение *.7z архива)");
+                            _isCompleted = _fe.ExtractArchive7za(_filePath, _destinationPath);
                         }
                         else
                         {
@@ -210,9 +176,11 @@ namespace DataUploader
                         }
                         break;
 
+                    case ".xlsx":
+                        _importIsCompleted = StartImportFile(_filePath);
+                        break;
+
                     case ".dtl":
-
-
                         // Определяем путь ко временной папке, куда будем копировать файлы для обработки
                         string tempDir = Path.Combine(Directory.GetCurrentDirectory(), "temp");
 
@@ -226,28 +194,32 @@ namespace DataUploader
 
                         // Файлы для обработки копируются во временную папку /temp
                         string tempFilePath = Path.Combine(tempDir, Path.GetFileName(_filePath));
-                        System.IO.File.Copy(_filePath, tempFilePath, true);
+                        DelegateShowProcessStage("⌛ (Копирование *.dtl файла во временную папку)");
+                        File.Copy(_filePath, tempFilePath, true);
 
-                        // конвертация/разархивации файла
+                        // Конвертация/Разархивация файла
                         if (_mode == null)
                         {
+                            DelegateShowProcessStage("⌛ (Конвертация *.dtl файла)");
                             _isCompleted = _fe.ConvertDtl(tempFilePath,
                                                           _destinationPath,
                                                           _selectedCsvEncoding,
                                                           _choosenOutputFileFormat,
                                                           _showMilisec);
                         }
-                        // импорт файла
+                        // Импорт файла
                         else
                         {
-                            bool isConverted = _fe.ConvertDtl(tempFilePath,
-                                                              tempDir,
-                                                              "ASCII",
-                                                              ".xlsx",
-                                                              "/t1");
+                            DelegateShowProcessStage("⌛ (Конвертация *.dtl файла)");
+                            _isConverted = _fe.ConvertDtl(tempFilePath,
+                                                          tempDir,
+                                                          "ASCII",
+                                                          ".xlsx",
+                                                          "/t1");
 
-                            if (isConverted)
+                            if (_isConverted)
                             {
+                                DelegateShowProcessStage("⌛ (Импорт сконвертированного *.xlsx файла)");
                                 _importIsCompleted = StartImportFile(Path.Combine(tempDir, Path.GetFileNameWithoutExtension(tempFilePath) + ".xlsx"));
                             }
                             else
@@ -264,10 +236,6 @@ namespace DataUploader
                         }
                         break;
 
-                    case ".xlsx":
-                        _importIsCompleted = StartImportFile(_filePath);
-                        break;
-
                     default:
                         MessageBox.Show("Расширение выбранного файла не соответствует следующим форматам:\n- *.zip\n- *.7z\n- *.dtl\n- *.xlsx",
                                         "Ошибка",
@@ -276,18 +244,15 @@ namespace DataUploader
                                         MessageBoxResult.Yes);
                         break;
                 }
+                // Отслеживаем запрос пользователем отмены операции
+                IsCancelled();
             }
             catch (Exception ex)
             {
-                string messageBoxText = ex.Message;
+                string messageBoxText = string.Format("{0}\n{1}\n{2}", ex.Message, ex.InnerException, ex.StackTrace);
                 string caption = "Ошибка";
 
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
-            }
-
-            if (worker.CancellationPending == true)
-            {
-                e.Cancel = true;
+                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.Yes);
             }
         }
 
@@ -299,27 +264,28 @@ namespace DataUploader
             }
             else if (e.Error != null) // Если ошибка в BackgroundWorker
             {
-                MessageBox.Show(e.Error.Message,
-                                "Ошибка",
-                                MessageBoxButton.OK,
-                                MessageBoxImage.Warning,
-                                MessageBoxResult.Yes);
+                string messageBoxText = string.Format("{0}\n{1}\n{2}", e.Error.Message, e.Error.InnerException, e.Error.StackTrace);
+                string caption = "Ошибка";
+
+                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.Yes);
                 Close();
             }
             else if (_importIsCompleted == true)
             {
-                meWaitingGif.Visibility = Visibility.Collapsed;
-                lbProcessStatus.Visibility = Visibility.Visible;
-                lbProcessStatus.Text = "Импорт в базу данных выполнен успешно!";
+                meWaitingGif.Visibility = Visibility.Hidden;
+                tbProcessStage.Visibility = Visibility.Hidden;
+                tbProcessStatus.Visibility = Visibility.Visible;
+                tbProcessStatus.Text = "Импорт в базу данных выполнен успешно!";
                 btnCancel.Visibility = Visibility.Collapsed;
                 btnClose.Visibility = Visibility.Visible;
                 btnRunExplorer.Visibility = Visibility.Collapsed;
             }
             else if (_isCompleted == true)
             {
-                meWaitingGif.Visibility = Visibility.Collapsed;
-                lbProcessStatus.Visibility = Visibility.Visible;
-                lbProcessStatus.Text = "Операция завершена";
+                meWaitingGif.Visibility = Visibility.Hidden;
+                tbProcessStage.Visibility = Visibility.Hidden;
+                tbProcessStatus.Visibility = Visibility.Visible;
+                tbProcessStatus.Text = "Операция завершена";
                 btnCancel.Visibility = Visibility.Collapsed;
                 btnRunExplorer.Visibility = Visibility.Visible;
             }
@@ -328,6 +294,10 @@ namespace DataUploader
                 Close();
             }
         }
+
+        // ----------------------------------------------------------------------------------------
+        // Обработка событий формы
+        // ----------------------------------------------------------------------------------------
 
         /// <summary>
         /// Обработка события MediaEnded в MediaElement meWaitingGif.
@@ -349,6 +319,7 @@ namespace DataUploader
                 _bgw.CancelAsync();
                 _fe.KillProcess();
                 _isCompleted = false;
+                _importIsCompleted = false;
             }
         }
 
@@ -388,27 +359,14 @@ namespace DataUploader
                     {
                         // *.zip архив извлекаетсыя не сторонним процессом, который...
                         // ...можно убить, а местной функцией ExtractToDirectory
-                        MessageBox.Show("Прерывание операции извлечения *.zip архива не поддерживается.",
-                        "Ошибка прерывания операции",
-                        MessageBoxButton.OK,
-                        MessageBoxImage.Warning,
-                        MessageBoxResult.Yes);
-                        
-                        // Отменить закрытие окна
-                        e.Cancel = true;
-                    }
-                    else if (System.IO.Path.GetExtension(_filePath) == ".xlsx")
-                    {
-                        // *.zip архив извлекаетсыя не сторонним процессом, который...
-                        // ...можно убить, а местной функцией ExtractToDirectory
-                        MessageBox.Show("Прерывание операции обработки *.xlsx файла не поддерживается.",
-                        "Ошибка прерывания операции",
+                        MessageBox.Show("Прерывание операции извлечения *.zip архива не поддерживается. В случае закрытия окна операция будет закончена в фоновом режиме.",
+                        "Предупреждение прерывания операции",
                         MessageBoxButton.OK,
                         MessageBoxImage.Warning,
                         MessageBoxResult.Yes);
 
-                        // Отменить закрытие окна
-                        e.Cancel = true;
+                        // Применить закрытие окна
+                        e.Cancel = false;
                     }
                     else // Если выбранный файл не *.zip формата
                     {
@@ -416,6 +374,8 @@ namespace DataUploader
                         {
                             _bgw.CancelAsync();
                             _fe.KillProcess();
+                            _isCompleted = false;
+                            _importIsCompleted = false;
                         }
                     }
                 }
@@ -424,6 +384,108 @@ namespace DataUploader
                     // Отменить закрытие окна
                     e.Cancel = true;
                 }
+            }
+        }
+
+        // ----------------------------------------------------------------------------------------
+        // Вспомогательные функции
+        // ----------------------------------------------------------------------------------------
+
+        /// <summary>
+        /// Нанинает цепочку действий для импорта содержимого файла.
+        /// </summary>
+        /// <returns>Импорт выполнен успешно (true), неуспешно (false)</returns>
+        private bool StartImportFile(string filePath)
+        {
+            DelegateShowProcessStage("⌛ (Запрос полей в БД)");
+            Dictionary<string, int> fieldsMap = DataUploader.DataContext.GetFields(_fileTypeId);
+
+            // Отслеживаем запрос пользователем отмены операции
+            if (IsCancelled()) { return false; };
+
+            Dictionary<string, int> fieldsMapComplemented = null;
+            DelegateShowProcessStage("⌛ (Сравнение заголовков *.xlsx ⇄ БД, уже имеющихся в БД)");
+            fieldsMapComplemented = FileExtension.CheckMissingFields(filePath, (int)_fileTypeId, fieldsMap);
+
+            // Отслеживаем запрос пользователем отмены операции
+            if (IsCancelled()) { return false; };
+
+            List<DataModel.ImportedMeasurement> measurementsList = null;
+            DelegateShowProcessStage("⌛ (Парсинг *.xlsx файла)");
+            measurementsList = FileExtension.ParseExcelFile(filePath, fieldsMapComplemented, (int)_transformerId, _phase, new TimeSpan(0, _selectedAveragingRange, 0), _averagingIsEnabled);
+
+            // Отслеживаем запрос пользователем отмены операции
+            if (IsCancelled()) { return false; };
+
+            ulong? updatedRows = null;
+            DelegateShowProcessStage("⌛ (Вставка записей в БД во временную таблицу)");
+            updatedRows = DataUploader.DataContext.InsertBinary(measurementsList, _selectedAveragingRange, _averagingIsEnabled);
+
+            // Отслеживаем запрос пользователем отмены операции
+            if (IsCancelled()) { DataUploader.DataContext.TruncateTempTableAsync(); return false; }
+
+            int? intersectionsCount = null;
+            DelegateShowProcessStage("⌛ (Проверка наложений в БД с существующими записями)");
+            intersectionsCount = DataUploader.DataContext.СheckIntersections();
+
+            // Отслеживаем запрос пользователем отмены операции
+            if (IsCancelled()) { DataUploader.DataContext.TruncateTempTableAsync(); return false; }
+
+            DelegateShowProcessStage("⌛ (Перемещение записей в основную таблицу в БД)");
+            int? updatedRowsAfterTransferTempData = null;
+            if (intersectionsCount == 0)
+            {
+                updatedRowsAfterTransferTempData = DataUploader.DataContext.TransferTempData(_filePath);
+                if (updatedRowsAfterTransferTempData != null) { return true; } else { return false; }
+            }
+            else
+            {
+                var r = MessageBox.Show(string.Format("Найдено существующих записей: {0}\nПерезаписать значения?", intersectionsCount),
+                                        "Найдены существующие записи",
+                                        MessageBoxButton.YesNo,
+                                        MessageBoxImage.Warning,
+                                        MessageBoxResult.Yes);
+
+                if (r == MessageBoxResult.Yes)
+                {
+                    updatedRowsAfterTransferTempData = DataUploader.DataContext.TransferTempData(_filePath, true);
+                    if (updatedRowsAfterTransferTempData != null) { return true; } else { return false; }
+                }
+                else
+                {
+                    updatedRowsAfterTransferTempData = DataUploader.DataContext.TransferTempData(_filePath);
+                    if (updatedRowsAfterTransferTempData != null) { return true; } else { return false; }
+                }
+            }
+        }
+
+        // Объявление делегата (указателя на метод) с именем InvokeDelegate - может указывать...
+        // ...на любой метод, который, возвращает void и принимает входной параметр типа string
+        private delegate void InvokeDelegate(string showString);
+
+        // Объявление метода, на который будет указывать делегат
+        private void DelegateShowProcessStage(string processStage)
+        {
+
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(new InvokeDelegate(DelegateShowProcessStage), processStage);
+                return;
+            }
+            tbProcessStage.Text = processStage;
+        }
+
+        // Отслеживает запрос пользователем отмены операции
+        private bool IsCancelled()
+        {
+            if (_worker.CancellationPending == true)
+            {
+                _e.Cancel = true;
+                return true;
+            }
+            else
+            {
+                return false;
             }
         }
     }

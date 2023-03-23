@@ -52,4 +52,27 @@ namespace DataUploader
             throw new NotImplementedException();
         }
     }
+
+    // Класс, который используется для изменения размера ListBox lbAvailibleFieldsInfo.
+    internal class AvailibleFieldsInfoDataGridHeightConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            double actualListViewHeight = (double)value - 480;
+            if (actualListViewHeight <= 0)
+            {
+                return 0;
+            }
+            else
+            {
+                return actualListViewHeight;
+            }
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, System.Globalization.CultureInfo culture)
+        {
+            throw new NotImplementedException();
+        }
+    }
+
 }

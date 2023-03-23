@@ -16,6 +16,21 @@
     <Deterministic>true</Deterministic>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -49,6 +64,9 @@
     <Reference Include="Npgsql, Version=6.0.6.0, Culture=neutral, PublicKeyToken=5d8b90d52f46fda7, processorArchitecture=MSIL">
       <HintPath>..\packages\Npgsql.6.0.6\lib\netstandard2.0\Npgsql.dll</HintPath>
     </Reference>
+    <Reference Include="Ookii.Dialogs.Wpf, Version=5.0.0.0, Culture=neutral, PublicKeyToken=66aa232afad40158, processorArchitecture=MSIL">
+      <HintPath>..\packages\Ookii.Dialogs.Wpf.5.0.1\lib\net462\Ookii.Dialogs.Wpf.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Buffers, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Buffers.4.5.1\lib\net461\System.Buffers.dll</HintPath>
@@ -58,6 +76,7 @@
     </Reference>
     <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
+    <Reference Include="System.Design" />
     <Reference Include="System.Diagnostics.DiagnosticSource, Version=6.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.Diagnostics.DiagnosticSource.6.0.0\lib\net461\System.Diagnostics.DiagnosticSource.dll</HintPath>
     </Reference>
@@ -89,6 +108,7 @@
     <Reference Include="System.ValueTuple, Version=4.0.3.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
       <HintPath>..\packages\System.ValueTuple.4.5.0\lib\net47\System.ValueTuple.dll</HintPath>
     </Reference>
+    <Reference Include="System.Web.Extensions" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
     <Reference Include="Microsoft.CSharp" />
@@ -111,23 +131,37 @@
     <Compile Include="AppConfig.cs" />
     <Compile Include="DataContext.cs" />
     <Compile Include="DataModel.cs" />
-    <Compile Include="ImportBox.xaml.cs">
-      <DependentUpon>ImportBox.xaml</DependentUpon>
+    <Compile Include="ExportForm.xaml.cs">
+      <DependentUpon>ExportForm.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ListViewHeightConverter.cs" />
+    <Compile Include="ImportForm.xaml.cs">
+      <DependentUpon>ImportForm.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="ListForm.xaml.cs">
+      <DependentUpon>ListForm.xaml</DependentUpon>
+    </Compile>
+    <Compile Include="UIElementHeightConverter.cs" />
     <Compile Include="TreeViewForm.xaml.cs">
       <DependentUpon>TreeViewForm.xaml</DependentUpon>
     </Compile>
-    <Compile Include="WaitingBox.xaml.cs">
-      <DependentUpon>WaitingBox.xaml</DependentUpon>
+    <Compile Include="WaitingForm.xaml.cs">
+      <DependentUpon>WaitingForm.xaml</DependentUpon>
     </Compile>
     <Compile Include="ProgressBarForm.xaml.cs">
       <DependentUpon>ProgressBarForm.xaml</DependentUpon>
     </Compile>
-    <Compile Include="ApplyBox.xaml.cs">
-      <DependentUpon>ApplyBox.xaml</DependentUpon>
+    <Compile Include="TypeNameForm.xaml.cs">
+      <DependentUpon>TypeNameForm.xaml</DependentUpon>
     </Compile>
-    <Page Include="ImportBox.xaml">
+    <Page Include="ExportForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ImportForm.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
+    <Page Include="ListForm.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -148,7 +182,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="WaitingBox.xaml">
+    <Page Include="WaitingForm.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -156,7 +190,7 @@
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
-    <Page Include="ApplyBox.xaml">
+    <Page Include="TypeNameForm.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>
@@ -204,6 +238,7 @@
     <Content Include="Properties\7zxa.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Resource Include="Properties\warning_48.png" />
     <Resource Include="Properties\add_48.png" />
     <Resource Include="Properties\choice_32.png" />
     <Content Include="Properties\BCGCBPRO101u90.dll">
@@ -213,6 +248,8 @@
     <Resource Include="Properties\database_import_96.png" />
     <Resource Include="Properties\convert_96.png" />
     <Resource Include="Properties\delete_28.png" />
+    <Resource Include="Properties\database_export_96.png" />
+    <Resource Include="Properties\coordinates_red_tooltip.png" />
     <Content Include="Properties\EasyConverter.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -224,6 +261,9 @@
     <Resource Include="Properties\remove_42.png" />
     <Resource Include="Properties\plus_root_30.png" />
     <Resource Include="Properties\plus_child_48.png" />
+    <Resource Include="Properties\reset_40.png" />
+    <Resource Include="Properties\save_checked_48.png" />
+    <Resource Include="Properties\load_checked_48.png" />
     <Content Include="Properties\sqlite3.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
@@ -233,6 +273,18 @@
     <Content Include="Properties\wait.gif">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include=".NETFramework,Version=v4.8">
+      <Visible>False</Visible>
+      <ProductName>Microsoft .NET Framework 4.8 %28x86 и x64%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="..\packages\System.Text.Json.6.0.0\build\System.Text.Json.targets" Condition="Exists('..\packages\System.Text.Json.6.0.0\build\System.Text.Json.targets')" />

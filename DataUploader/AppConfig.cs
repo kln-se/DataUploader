@@ -20,23 +20,26 @@ namespace DataUploader
         private static string s_host;
         private static string s_port;
         private static string s_databaseName;
+        private static string s_averagingRangeUid;
 
         /// <summary>
         /// Получение App.config
         /// </summary>
-        private static void GetConfig()
+        private static Configuration GetConfig()
         {
             try
             {
                 s_configPath = Assembly.GetExecutingAssembly().Location;
-                s_config = ConfigurationManager.OpenExeConfiguration(s_configPath);
+                return ConfigurationManager.OpenExeConfiguration(s_configPath);
             }
             catch (Exception ex)
             {
-                string messageBoxText = ex.Message;
+                string messageBoxText = string.Format("{0}\n{1}\n{2}", ex.Message, ex.InnerException, ex.StackTrace);
                 string caption = "Ошибка получения *.config файла";
 
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.Yes);
+
+                return null;
             }
         }
 
@@ -45,7 +48,7 @@ namespace DataUploader
         /// </summary>
         public static string[] GetSettings()
         {
-            GetConfig();
+            s_config = GetConfig();
 
             // Чтение из App.config
             s_login = s_config.AppSettings.Settings["host"].Value;
@@ -67,7 +70,7 @@ namespace DataUploader
                                        string password)
 
         {
-            GetConfig();
+            s_config = GetConfig();
 
             s_login = host;
             s_password = port;
@@ -81,6 +84,35 @@ namespace DataUploader
             s_config.AppSettings.Settings["databaseName"].Value = databaseName;
             s_config.AppSettings.Settings["login"].Value = login;
             s_config.AppSettings.Settings["password"].Value = password;
+
+            s_config.Save();
+            ConfigurationManager.RefreshSection("appSettings");
+        }
+
+        /// <summary>
+        /// Получение настроек усреднения данных из App.config
+        /// </summary>
+        public static string GetAveragingRange()
+        {
+            s_config = GetConfig();
+
+            // Чтение из App.config
+            s_averagingRangeUid = s_config.AppSettings.Settings["averagingRangeUid"].Value;
+            
+            return s_averagingRangeUid;
+        }
+
+        /// <summary>
+        /// Запись настроек усреднения данных в App.config
+        /// </summary>
+        public static void SetAveragingRange(string averagingRangeUid)
+        {
+            s_config = GetConfig();
+
+            s_averagingRangeUid = averagingRangeUid;
+
+            // Запись в App.config
+            s_config.AppSettings.Settings["averagingRangeUid"].Value = averagingRangeUid;
 
             s_config.Save();
             ConfigurationManager.RefreshSection("appSettings");

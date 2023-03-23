@@ -5,9 +5,10 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:DataUploader"
         mc:Ignorable="d"
-        Title="DataUploader 1.0.0.0" MinWidth="325" Width="440" MinHeight="65" Height="640" WindowStartupLocation="CenterScreen">
+        Title="DataUploader 2.1.0.0" MinWidth="325" Width="680" MinHeight="65" Height="770" WindowStartupLocation="CenterScreen">
     <Window.Resources>
-        <local:UploadedFilesListViewHeightConverter x:Key="listviewheightconverter"></local:UploadedFilesListViewHeightConverter>
+        <local:UploadedFilesListViewHeightConverter x:Key="lvHeightConverter"></local:UploadedFilesListViewHeightConverter>
+        <local:AvailibleFieldsInfoDataGridHeightConverter x:Key="dgHeightConverter"></local:AvailibleFieldsInfoDataGridHeightConverter>
     </Window.Resources>
 
     <Grid>
@@ -16,18 +17,18 @@
                 <Grid>
 
                     <StackPanel VerticalAlignment="Top" Margin="20,10,20,0">
-                        <TextBlock HorizontalAlignment="Left" Margin="0,0,0,5" TextWrapping="NoWrap" Text="Выберете опцию обработки:" VerticalAlignment="Top" FontWeight="Normal"/>
+                        <TextBlock HorizontalAlignment="Left" Margin="0,0,0,5" TextWrapping="NoWrap" Text="Выберете опцию обработки:" VerticalAlignment="Top"/>
                         <ComboBox x:Name="cmbFileOrFolder" HorizontalAlignment="Stretch" Margin="0,0,0,5" VerticalAlignment="Top" ToolTip="Выберете 'Файл' для обработки единичного файла или 'Директория' для пакетной обработки файлов в директории." SelectionChanged="FileOrFolderSelected">
                             <ComboBoxItem Content="Файл (для обработки одного файла: *.zip, *.7z, *.dtl, *.xlsx)" Tag="file"/>
                             <ComboBoxItem Content="Директория (для пакетной обработки *.dtl файлов в директории)" Tag="folder"/>
                         </ComboBox>
                         <DockPanel VerticalAlignment="Top" Margin="0,0,0,0" LastChildFill="True">
                             <Button x:Name="btnBrowseFile" Content="Обзор..." Margin="10,0,0,0" VerticalAlignment="Top" Click="ChooseFileOrFolderDialog" RenderTransformOrigin="0.371,-0.349" Width="90" DockPanel.Dock="Right"/>
-                            <TextBox x:Name="tbFileOrFolderPath" HorizontalAlignment="Stretch" Margin="0,0,0,0" TextWrapping="NoWrap" Text="Файл не выбран" VerticalAlignment="Top" Height="19.96"/>
+                            <TextBox x:Name="tbFileOrFolderPath" HorizontalAlignment="Stretch" Margin="0,0,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Height="19.96" TextChanged="SourcePathChangedByInput"/>
                         </DockPanel>
                     </StackPanel>
 
-                    <GroupBox Header="Формат файла" Margin="21,83,19,0" VerticalAlignment="Top">
+                    <GroupBox Header="Формат файла:" Margin="21,83,19,0" VerticalAlignment="Top">
                         <StackPanel VerticalAlignment="Top" Margin="10,5,10,5" Orientation="Horizontal">
                             <RadioButton x:Name="rbArchive" Content="Архив (*.zip, *.7z)" HorizontalAlignment="Left" Margin="0,0,0,0" VerticalAlignment="Top" GroupName="fileFormat" IsHitTestVisible="False"/>
                             <RadioButton x:Name="rbDtl" Content="*.dtl" HorizontalAlignment="Left" Margin="70,0,0,0" VerticalAlignment="Top" GroupName="fileFormat" IsHitTestVisible="False" />
@@ -71,7 +72,7 @@
                                 </Image>
                             </Button>
                             <Button x:Name="btnBrowseDestination" Content="Обзор..." HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center" Click="ChooseDestinationFolderDialog" ToolTip="Выберете директорию для сохранения обработанных файлов" MinWidth="90" DockPanel.Dock="Right"/>
-                            <TextBox x:Name="tbDestinationPath" HorizontalAlignment="Stretch" Margin="0,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="ChangedByInput" />
+                            <TextBox x:Name="tbDestinationPath" HorizontalAlignment="Stretch" Margin="0,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="DestinationPathChangedByInput"/>
                         </DockPanel>
                     </StackPanel>
 
@@ -107,7 +108,30 @@
                         </StackPanel>
                     </GroupBox>
 
-                    <Button x:Name="btnImportToDB" Margin="20,523,20,0" VerticalAlignment="Top" ToolTip="Импортировать содержание выбранного файла (архива) в базу данных" Height="34" BorderThickness="1.5" Click="ImportToDB">
+                    <GroupBox Header="Параметры импорта данных:" VerticalAlignment="Top" Margin="20,518,20,0">
+                        <StackPanel Margin="10,5,10,5">
+
+                            <DockPanel LastChildFill="True" Margin="0,5,0,0" >
+                                <CheckBox x:Name="chbOverwriteData" Margin="0,0,0,0" Content="Перезаписать повторяющиеся данные (при пакетной обработке)" DockPanel.Dock="Top" VerticalAlignment="Center" Checked="CheckOverwriteData" Unchecked="UncheckOverwriteData"/>
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,5,0,0">
+                                    <CheckBox x:Name="chbUploadDataWithAveraging" Margin="0,0,0,0" Content="Усреднять данные при загрузке"  Checked="CheckUploadDataWithAveraging" Unchecked="UncheckUploadDataWithAveraging" DockPanel.Dock="Top" VerticalAlignment="Center"/>
+                                    <Image x:Name="imgRawDataWarning" Source="/Properties/warning_48.png" Width="16" Height="16" Margin="5,0,0,0" ToolTip="Загрузка «сырых» данных может потребовать значительного пространства на диске."/>
+                                </StackPanel>
+                                <TextBlock Text="Интервал усреднения:" Margin="0,5,0,0" DockPanel.Dock="Top"/>
+                                <ComboBox x:Name="cmbAveragingRange" HorizontalAlignment="Stretch" Margin="0,5,0,0" VerticalAlignment="Center" Height="19.96" IsReadOnly="True" SelectionChanged="AveragingRangeSelected" ToolTip="Интервал усреднения, мин.">
+                                    <ComboBoxItem Content="1 мин." Tag="1" Uid ="0"/>
+                                    <ComboBoxItem Content="2 мин." Tag="2" Uid ="1"/>
+                                    <ComboBoxItem Content="5 мин." Tag="5" Uid ="2"/>
+                                    <ComboBoxItem Content="10 мин." Tag="10" Uid ="3"/>
+                                    <ComboBoxItem Content="15 мин." Tag="15" Uid ="4"/>
+                                    <ComboBoxItem Content="20 мин." Tag="20" Uid ="5"/>
+                                    <ComboBoxItem Content="30 мин." Tag="30" Uid ="6"/>
+                                    <ComboBoxItem Content="60 мин." Tag="60" Uid ="7"/>
+                                </ComboBox>
+                            </DockPanel>
+                        </StackPanel>
+                    </GroupBox>
+                    <Button x:Name="btnImportToDB" Margin="21,648,19,0" VerticalAlignment="Top" ToolTip="Импортировать содержание выбранного файла (архива) в базу данных" Height="34" BorderThickness="1.5" Click="ImportToDB">
                         <Button.Resources>
                             <Style TargetType="Border">
                                 <Setter Property="CornerRadius" Value="0"/>
@@ -177,11 +201,11 @@
                 </Grid>
             </TabItem>
             <TabItem Header="Журнал">
-                <Grid x:Name="grid">
+                <Grid>
                     <DockPanel x:Name="dockPanel" Margin="20,5,20,20" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
 
                         <StackPanel HorizontalAlignment="Left" VerticalAlignment="Top" DockPanel.Dock="Right" Margin="10,0,0,0">
-                            <Button x:Name="btnUpdateTable" HorizontalAlignment="Left" Margin="0,43.96,0,0" Background="{x:Null}" BorderBrush="{x:Null}" Width="24" ToolTip="Обновить журнал" VerticalAlignment="Top" Click="UpdateTableAsync">
+                            <Button x:Name="btnUpdateTable" HorizontalAlignment="Left" Margin="0,43.96,0,0" Background="{x:Null}" BorderBrush="{x:Null}" Width="24" ToolTip="Обновить журнал" VerticalAlignment="Top" Click="UpdateLogTableAsync">
                                 <Image Source="/Properties/update_48.png">
                                     <Image.Style>
                                         <Style TargetType="{x:Type Image}">
@@ -211,7 +235,7 @@
 
                         <StackPanel x:Name="stackPanel" VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
                             <TextBlock Text="Журнал файлов, загруженных в базу данных:" HorizontalAlignment="Left" VerticalAlignment="Top"/>
-                            <ListView x:Name="lvUploadedFiles" Margin="0,5,0,0" MinWidth="50" FontSize="10" HorizontalAlignment="Stretch" Height="{Binding ElementName=dockPanel, Path=ActualHeight, Converter={StaticResource listviewheightconverter}}">
+                            <ListView x:Name="lvUploadedFiles" Margin="0,5,0,0" MinWidth="50" FontSize="10" HorizontalAlignment="Stretch" Height="{Binding ElementName=dockPanel, Path=ActualHeight, Converter={StaticResource lvHeightConverter}}">
                                 <ListView.View>
                                     <GridView AllowsColumnReorder="true">
                                         <GridViewColumn DisplayMemberBinding="{Binding Path=DateTime}" Header="Дата загрузки"/>
@@ -221,13 +245,149 @@
                                         <GridViewColumn DisplayMemberBinding="{Binding Path=Phase}">Фаза</GridViewColumn>
                                         <GridViewColumn DisplayMemberBinding="{Binding Path=Category}">Категория</GridViewColumn>
                                         <GridViewColumn DisplayMemberBinding="{Binding Path=FileType}">Тип файла</GridViewColumn>
-                                        <GridViewColumn DisplayMemberBinding="{Binding Path=RecordsNum}">Кол-во связанных записей</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=AveragingRange}">Усреднение, мин.</GridViewColumn>
+                                        <GridViewColumn DisplayMemberBinding="{Binding Path=RecordsNum}">Кол-во записей в БД</GridViewColumn>
                                     </GridView>
                                 </ListView.View>
                             </ListView>
                         </StackPanel>
 
                     </DockPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Экспорт данных">
+                <Grid x:Name="gridExportTab">
+                    <StackPanel Margin="20,5,20,0">
+                        <TextBlock Margin="0,0,0,0" TextWrapping="NoWrap" Text="Выбор начального и конечного значений интервала времени выгрузки:" FontWeight="Normal"/>
+                        <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                            <TextBlock Margin="0,0,0,0" TextWrapping="NoWrap" Text="с" VerticalAlignment="Center"/>
+                            <DatePicker x:Name="dpStartDate" HorizontalAlignment="Left" Margin="5,0,0,0" VerticalAlignment="Top" SelectedDateChanged="StartDateSelected"/>
+                            <TextBlock Margin="5,0,0,0" TextWrapping="NoWrap" Text="по" VerticalAlignment="Center"/>
+                            <DatePicker x:Name="dpEndDate" HorizontalAlignment="Left" Margin="5,0,0,0" VerticalAlignment="Top" SelectedDateChanged="EndDateSelected"/>
+                            <Button x:Name="btnResetIntervalDate" Margin="5,0,0,0" Width="20" Height="20" Background="{x:Null}" Foreground="{x:Null}" ToolTip="Сбросить даты к значениям по умолчанию (min и max значениям в БД)." BorderBrush="{x:Null}" DockPanel.Dock="Right" Click="ResetIntervalDates">
+                                <Image Source="/Properties/reset_40.png" Margin="0,0,0,0" VerticalAlignment="Center">
+                                    <Image.Style>
+                                        <Style TargetType="{x:Type Image}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.5" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                            </Button>
+                        </StackPanel>
+                        <TextBlock Margin="0,10,0,0" TextWrapping="NoWrap" Text="Выберите доступное оборудование и интервал усреднения:" VerticalAlignment="Center"/>
+                        <TreeView x:Name="tvSubstTransPhase" Height="100" Margin="0,5,0,0" SelectedItemChanged="SelectTreeItem">
+                            <TreeView.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Childs}">
+                                    <TextBlock Text="{Binding Name}" Tag="{Binding Id}"/>
+                                </HierarchicalDataTemplate>
+                            </TreeView.ItemTemplate>
+                        </TreeView>
+                        <TextBlock Margin="0,10,0,0" TextWrapping="NoWrap" Text="Экспортируемые поля (в порядке выбора):" VerticalAlignment="Center"/>
+                        <DockPanel LastChildFill="True">
+                            <StackPanel Margin="10,31,0,0" DockPanel.Dock="Right">
+                                <Button x:Name="btnLoadFieldsPreset" Margin="0,0,0,0" Width="24" Height="24" Background="{x:Null}" Foreground="{x:Null}" ToolTip="Загрузить сохранённый пресет экспортируемых полей." DockPanel.Dock="Right" Click="LoadCheckedPreset" VerticalAlignment="Top" BorderBrush="{x:Null}">
+                                    <Image Source="/Properties/load_checked_48.png" Margin="0,0,0,0" VerticalAlignment="Center">
+                                        <Image.Style>
+                                            <Style TargetType="{x:Type Image}">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.5" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                                <Button x:Name="btnSaveFieldsPreset" Margin="0,5,0,0" Width="24" Height="24" Background="{x:Null}" Foreground="{x:Null}" ToolTip="Сохранить пресет отмеченных для экспорта полей." DockPanel.Dock="Right" Click="SaveCheckedPreset" VerticalAlignment="Top" BorderBrush="{x:Null}">
+                                    <Image Source="/Properties/save_checked_48.png" Margin="0,0,0,0" VerticalAlignment="Center">
+                                        <Image.Style>
+                                            <Style TargetType="{x:Type Image}">
+                                                <Style.Triggers>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.5" />
+                                                    </Trigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Image.Style>
+                                    </Image>
+                                </Button>
+                            </StackPanel>
+                            <DataGrid x:Name="dgAvailibleFieldsInfo" AutoGenerateColumns="False" MinHeight="100" Margin="0,5,0,0" Height="{Binding ActualHeight, ElementName=gridExportTab, Converter={StaticResource dgHeightConverter}}" VerticalGridLinesBrush="Gray" HorizontalGridLinesBrush="Gray" CanUserAddRows="False" CanUserDeleteRows="False" CellEditEnding="DataGridCurrentCheckBoxCellEditEnding" SelectionMode="Single" BeginningEdit="DataGridCurrentCheckBoxCellEditBeginning">
+                                <DataGrid.Columns>
+                                    <DataGridTextColumn Header="Id" Binding="{Binding Path=FieldId}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Доступные поля" Binding="{Binding Path=FieldName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Тип файла" Binding="{Binding Path=FileName}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="Категория" Binding="{Binding Path=CategoryName}" IsReadOnly="True"/>
+                                    <DataGridCheckBoxColumn Header="AVG" Binding="{Binding Path=ValueIsChecked}"/>
+                                    <DataGridCheckBoxColumn Header="MIN" Binding="{Binding Path=ValueMinIsChecked}"/>
+                                    <DataGridCheckBoxColumn Header="MAX" Binding="{Binding Path=ValueMaxIsChecked}"/>
+                                    <DataGridTextColumn Header="AVG☑" Binding="{Binding Path=ValueIsCheckedOrder}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="MIN☑" Binding="{Binding Path=ValueMinIsCheckedOrder}" IsReadOnly="True"/>
+                                    <DataGridTextColumn Header="MAX☑" Binding="{Binding Path=ValueMaxIsCheckedOrder}" IsReadOnly="True"/>
+                                </DataGrid.Columns>
+                            </DataGrid>
+                        </DockPanel>
+                        <StackPanel VerticalAlignment="Top" Margin="0,10,0,0">
+                            <TextBlock HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" FontWeight="Normal" Visibility="Visible" Text="Выберете директорию для экспорта данных в формате *.xlsx:"/>
+                            <DockPanel VerticalAlignment="Top" Margin="0,5,0,0">
+                                <Button x:Name="btnBrowseExportDestination" Content="Обзор..." HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center" ToolTip="Выберете директорию для экспорта данных в формате *.xlsx" MinWidth="90" DockPanel.Dock="Right" Click="ChooseExportDestinationFolderDialog"/>
+                                <TextBox x:Name="tbExportDestinationPath" HorizontalAlignment="Stretch" Margin="0,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="ExportDestinationPathChangedByInput"/>
+                            </DockPanel>
+                        </StackPanel>
+                        <GroupBox Header="Параметры экспорта данных:" VerticalAlignment="Top" Margin="0,5,0,0">
+                            <StackPanel Margin="10,5,10,0">
+                                <CheckBox x:Name="chbExportToTemplate" Content="Экспортировать данные в шаблон" VerticalAlignment="Center" Checked="CheckExportToTemplate" Unchecked="UncheckExportToTemplate"/>
+                                <TextBlock HorizontalAlignment="Left" Margin="0,5,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" Text="Координаты размещения заголовка первого столбца данных (столбец &quot;дата&quot;):"> 
+                                    <TextBlock.ToolTip>
+                                        <StackPanel Orientation="Vertical">
+                                            <TextBlock>Координаты столбца "Дата" по умолчанию:</TextBlock>
+                                            <Image Source="/Properties/coordinates_red_tooltip.png" Height="72" Width="274.8343" HorizontalAlignment="Left" Margin="0,2,0,0" />
+                                        </StackPanel>
+                                    </TextBlock.ToolTip>
+                                </TextBlock>
+                                <StackPanel Orientation="Horizontal" Margin="0,5,0,0">
+                                    <TextBlock Text="№ листа"/>
+                                    <TextBox x:Name="tbSheetNum" Text="3" Width="30" HorizontalAlignment="Stretch" Margin="5,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="SheetNumChangedByInput"/>
+                                    <TextBlock Text="№ строки" Margin="10,0,0,0"/>
+                                    <TextBox x:Name="tbRowNum" Text="1" Width="30" HorizontalAlignment="Stretch" Margin="5,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="RowNumChangedByInput"/>
+                                    <TextBlock Text="№ столбца" Margin="10,0,0,0"/>
+                                    <TextBox x:Name="tbColumnNum" Text="1" Width="30" HorizontalAlignment="Stretch" Margin="5,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="ColumnNumChangedByInput"/>
+                                </StackPanel>
+                                <StackPanel VerticalAlignment="Top" Margin="0,10,0,5">
+                                    <TextBlock HorizontalAlignment="Left" Margin="0,0,0,0" TextWrapping="NoWrap" VerticalAlignment="Top" FontWeight="Normal" Visibility="Visible" Text="Выберете файл шаблона в формате *.xlsx для экспорта данных:"/>
+                                    <DockPanel VerticalAlignment="Top" Margin="0,5,0,0">
+                                        <Button x:Name="btnBrowseTemplate" Content="Обзор..." HorizontalAlignment="Left" Margin="10,0,0,0" VerticalAlignment="Center" ToolTip="Выберете директорию для экспорта данных в формате *.xlsx" MinWidth="90" DockPanel.Dock="Right" Click="ChooseTemplateDestinationPathDialog"/>
+                                        <TextBox x:Name="tbTemplatePath" HorizontalAlignment="Stretch" Margin="0,0,0,0" VerticalAlignment="Center" Height="19.96" TextChanged="TemplateSourcePathChangedByInput" ToolTip="Экспортируемые данные будут вставлены в копию указанного файла шаблона."/>
+                                    </DockPanel>
+                                </StackPanel>
+                            </StackPanel>
+                        </GroupBox>
+                        <Button x:Name="btnExportFromDB" Margin="0,10,0,0" VerticalAlignment="Top" ToolTip="Экспортировать данные из БД за выбранный промежуток времени для выбранных подстанции, трансформатора и фазы." Height="34" BorderThickness="1.5" Click="ExportFromDB">
+                            <Button.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="0"/>
+                                </Style>
+                            </Button.Resources>
+                            <StackPanel Orientation="Horizontal">
+                                <Image Source="/Properties/database_export_96.png">
+                                    <Image.Style>
+                                        <Style TargetType="{x:Type Image}">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.5" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Image.Style>
+                                </Image>
+                                <TextBlock Text="Экспортировать из БД" VerticalAlignment="Center" Margin="5,0,5,0"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
                 </Grid>
             </TabItem>
         </TabControl>

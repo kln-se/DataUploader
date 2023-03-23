@@ -15,45 +15,48 @@ using System.Windows.Shapes;
 namespace DataUploader
 {
     /// <summary>
-    /// Логика взаимодействия для ApplyBox.xaml
+    /// Логика взаимодействия для TypeNameBox.xaml
     /// </summary>
-    public partial class ApplyBox : Window
+    public partial class TypeNameForm : Window
     {
-
-        internal string TypedNodeName { get; set; }
-        internal bool NodeNameWasApplied { get; set; }
-        public ApplyBox()
+        private string _typedName;
+        public string TypedName
+        {
+            get { return _typedName; }
+        }
+        private bool NameWasApplied { get; set; }
+        public TypeNameForm()
         {
             InitializeComponent();
-            NodeNameWasApplied = false;
+            NameWasApplied = false;
         }
 
         private void ApplyNodeName(object sender, RoutedEventArgs e)
         {
-  
-            TypedNodeName = tbTypedNodeName.Text;
+
+            _typedName = tbTypedNodeName.Text;
 
             if (tbTypedNodeName.Text == "")
             {
-                string messageBoxText = "Введите название узла.";
-                string caption = "Ошибка ввода названия узла";
+                string messageBoxText = "Введите название!";
+                string caption = "Ошибка ввода названия элемента";
 
                 MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
                 
-                NodeNameWasApplied = false;
+                NameWasApplied = false;
             }
             else
             {
-                NodeNameWasApplied = true;
+                NameWasApplied = true;
                 Close();
             }
         }
 
         private void FormClosing(object sender, System.ComponentModel.CancelEventArgs e)
         {
-            if (!NodeNameWasApplied)
+            if (!NameWasApplied)
             {
-                TypedNodeName = null;
+                _typedName = null;
             }
         }
     }

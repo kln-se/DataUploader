@@ -14,8 +14,8 @@ namespace DataUploader
 {
     
     /// <summary>
-    /// Содержит методы разархивирования и конвертации, которые используются в зависимости от
-    /// расширения файла, подгруженного пользователем
+    /// Содержит методы разархивирования и конвертации, парсинга, которые используются
+    /// в зависимости от расширения файла, подгруженного пользователем
     /// </summary>
     internal class FileExtension
     {
@@ -58,24 +58,31 @@ namespace DataUploader
             }
             catch (System.IO.IOException)
             {
-                string messageBoxText = "Файл с таким именем уже был извлечен или существует.";
-                string caption = "Ошибка извлечения файла";
-
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
-
-                return false;
+                var r = MessageBox.Show("Файл с таким именем уже был извлечен или существует. Открыть папку с данным файлом?",
+                        "Ошибка извлечения файла",
+                        MessageBoxButton.YesNo,
+                        MessageBoxImage.Warning,
+                        MessageBoxResult.Yes);
+                if (r == MessageBoxResult.Yes)
+                {
+                    Process.Start("explorer.exe", destinationPath);
+                    return false;
+                }
+                else // MessageBoxResult.No
+                {
+                    return false;
+                }
             }
             catch (Exception ex)
             {
-                string messageBoxText = ex.Message;
+                string messageBoxText = string.Format("{0}\n{1}\n{2}", ex.Message, ex.InnerException, ex.StackTrace);
                 string caption = "Ошибка";
 
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.Yes);
 
                 return false;
             }
         }
-
 
         /// <summary>
         /// Функция, которая вызывается, если пользователь подгрузил 7z-архив.
@@ -109,10 +116,10 @@ namespace DataUploader
             }
             catch (Exception ex)
             {
-                string messageBoxText = ex.Message;
+                string messageBoxText = string.Format("{0}\n{1}\n{2}", ex.Message, ex.InnerException, ex.StackTrace);
                 string caption = "Ошибка";
 
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.Yes);
                 // Распаковка не выполнена
                 return false;
             }
@@ -212,7 +219,7 @@ namespace DataUploader
         /// <summary>
         /// Извлечение данных из *.xslx файла.
         /// </summary>
-        internal static List<DataModel.Measurement> ParseExcelFile(string filePath, Dictionary<string, int> fieldsMap, int transformerId, string phase, TimeSpan averagingRange)
+        internal static List<DataModel.ImportedMeasurement> ParseExcelFile(string filePath, Dictionary<string, int> fieldsMap, int transformerId, string phase, TimeSpan averagingRange, bool averagingIsEnabled)
         {           
             DateTime? averagingStopDateTime = null;
 
@@ -220,11 +227,13 @@ namespace DataUploader
             TimeSpan currentTimeValue;
             int currentMillisecondValue;
 
-            // Для расчёта среднего значения
+            // Для расчёта значений
             float cellValuesSum = 0;
             int cellCount = 0;
+            float? cellValueMin = null;
+            float? cellValueMax = null;
 
-            List<DataModel.Measurement> measurementsList = new List<DataModel.Measurement>();
+            List<DataModel.ImportedMeasurement> measurementsList = new List<DataModel.ImportedMeasurement>();
 
             FileInfo fi = new FileInfo(filePath);
 
@@ -269,47 +278,82 @@ namespace DataUploader
                             currentDateValue += currentTimeValue;
                             currentDateValue = currentDateValue.AddMilliseconds(currentMillisecondValue);
 
-                            if (averagingStopDateTime == null)
+                            // Усреднять данные
+                            if (averagingIsEnabled)
                             {
-                                averagingStopDateTime = GetAveragingIntervalStopPoint(currentDateValue, averagingRange);
-                            }
+                                if (averagingStopDateTime == null)
+                                {
+                                    averagingStopDateTime = GetAveragingIntervalStopPoint(currentDateValue, averagingRange);
+                                    
+                                    cellValueMin = Convert.ToSingle(tempWorksheet.Cells[r, c].Value);
+                                    cellValueMax = Convert.ToSingle(tempWorksheet.Cells[r, c].Value);
+                                }
 
-                            // Считываем значение ячейки
-                            float tempFieldValue = Convert.ToSingle(tempWorksheet.Cells[r, c].Value);
+                                // Считываем значение ячейки
+                                float tempFieldValue = Convert.ToSingle(tempWorksheet.Cells[r, c].Value);
 
-                            if (currentDateValue < averagingStopDateTime)
-                            {
-                                cellValuesSum += tempFieldValue;
-                                cellCount += 1;
+                                if (currentDateValue < averagingStopDateTime)
+                                {
+                                    cellValuesSum += tempFieldValue;
+                                    cellCount += 1;
 
-                                // Если конец файла
-                                if (w == worksheetCount &&
-                                    r == rowCount)
+                                    cellValueMin = (tempFieldValue > cellValueMin) ? cellValueMin : tempFieldValue;
+                                    cellValueMax = (tempFieldValue > cellValueMax) ? tempFieldValue : cellValueMax;
+
+                                    // Если конец файла
+                                    if (w == worksheetCount &&
+                                        r == rowCount)
+                                    {
+                                        float averageFieldValue = cellValuesSum / cellCount;
+
+                                        measurementsList.Add(new DataModel.ImportedMeasurement((DateTime)averagingStopDateTime - averagingRange,
+                                                                                        averageFieldValue,
+                                                                                        cellValueMin,
+                                                                                        cellValueMax,
+                                                                                        tempFieldId,
+                                                                                        transformerId,
+                                                                                        phase));
+
+                                        averagingStopDateTime = null;
+                                        
+                                        cellValueMin = null;
+                                        cellValueMax = null;
+                                    }
+                                }
+                                else
                                 {
                                     float averageFieldValue = cellValuesSum / cellCount;
 
-                                    measurementsList.Add(new DataModel.Measurement((DateTime)averagingStopDateTime - averagingRange,
-                                                                                    averageFieldValue,
-                                                                                    tempFieldId,
-                                                                                    transformerId,
-                                                                                    phase));
+                                    measurementsList.Add(new DataModel.ImportedMeasurement((DateTime)averagingStopDateTime - averagingRange,
+                                                                                           averageFieldValue,
+                                                                                           cellValueMin,
+                                                                                           cellValueMax,
+                                                                                           tempFieldId,
+                                                                                           transformerId,
+                                                                                           phase));
 
-                                    averagingStopDateTime = null;
+                                    averagingStopDateTime = GetAveragingIntervalStopPoint(currentDateValue, averagingRange);
+                                    
+                                    cellValuesSum = tempFieldValue;
+                                    cellCount = 1;
+                                    
+                                    cellValueMin = tempFieldValue;
+                                    cellValueMax = tempFieldValue;
                                 }
                             }
+                            // Не усреднять данные
                             else
                             {
-                                float averageFieldValue = cellValuesSum / cellCount;
+                                // Считываем значение ячейки
+                                float tempFieldValue = Convert.ToSingle(tempWorksheet.Cells[r, c].Value);
 
-                                measurementsList.Add(new DataModel.Measurement((DateTime)averagingStopDateTime - averagingRange,
-                                                                                averageFieldValue,
-                                                                                tempFieldId,
-                                                                                transformerId,
-                                                                                phase));
-
-                                averagingStopDateTime = GetAveragingIntervalStopPoint(currentDateValue, averagingRange);
-                                cellValuesSum = tempFieldValue;
-                                cellCount = 1;
+                                measurementsList.Add(new DataModel.ImportedMeasurement(currentDateValue,
+                                                                                       tempFieldValue,
+                                                                                       null,
+                                                                                       null,
+                                                                                       tempFieldId,
+                                                                                       transformerId,
+                                                                                       phase));
                             }
                         }
                     }

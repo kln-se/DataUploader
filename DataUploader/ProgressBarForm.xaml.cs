@@ -19,7 +19,7 @@ using Path = System.IO.Path;
 namespace DataUploader
 {
     /// <summary>
-    /// Логика взаимодействия для Window1.xaml
+    /// Логика взаимодействия для ProgressBarBox.xaml
     /// </summary>
     public partial class ProgressBarForm : Window
     {
@@ -57,7 +57,7 @@ namespace DataUploader
             _choosenOutputFileFormat = choosenOutputFileFormat;
             _showMilisec = showMilisec;
 
-            UIelementsInitialization();
+            InitializeUIelements();
 
             InitializeBackgroundWorker();
 
@@ -66,6 +66,21 @@ namespace DataUploader
             StartAsync();
         }
 
+        private void InitializeTimer()
+        {
+            _startTime = new TimeSpan(0, 0, 0);
+        }
+
+        private void InitializeUIelements()
+        {
+            btnRunExplorer.Visibility = Visibility.Hidden;
+            lbProcessStatus.Visibility = Visibility.Hidden;
+            pbProcessProgress.Value = 0;
+        }
+
+        // ----------------------------------------------------------------------------------------
+        // Background worker
+        // ----------------------------------------------------------------------------------------
         private void InitializeBackgroundWorker()
         {
             _bgw.WorkerReportsProgress = true;
@@ -74,24 +89,6 @@ namespace DataUploader
             _bgw.DoWork += new DoWorkEventHandler(BgwDoWork);
             _bgw.RunWorkerCompleted += new RunWorkerCompletedEventHandler(BgwWorkCompleted);
             _bgw.ProgressChanged += new ProgressChangedEventHandler(ProgressChanged);
-
-        }
-        private void InitializeTimer()
-        {
-            _startTime = new TimeSpan(0, 0, 0);
-        }
-
-        private void UIelementsInitialization()
-        {
-            btnRunExplorer.Visibility = Visibility.Hidden;
-            lbProcessStatus.Visibility = Visibility.Hidden;
-            pbProcessProgress.Value = 0;
-        }
-        void TimerCallback(object state)
-        {
-            this._startTime += new TimeSpan(0,0,1);
-            // Обновление TextBlock tbTimePassed из другого потока
-            DelegateShowTime(string.Format("{0:hh\\:mm\\:ss}", (_startTime)));
         }
 
         private void StartAsync()
@@ -100,6 +97,12 @@ namespace DataUploader
             {
                 _bgw.RunWorkerAsync();
             }
+        }
+
+        private void ProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            tbPercentCompleted.Text = ("Выполнено " + e.ProgressPercentage.ToString() + "%");
+            pbProcessProgress.Value = e.ProgressPercentage;
         }
 
         private void BgwDoWork(object sender, DoWorkEventArgs e)
@@ -147,10 +150,10 @@ namespace DataUploader
                 }
                 catch (Exception ex)
                 {
-                    string messageBoxText = ex.Message;
+                    string messageBoxText = string.Format("{0}\n{1}\n{2}", ex.Message, ex.InnerException, ex.StackTrace);
                     string caption = "Ошибка конвертации файла";
 
-                    MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
+                    MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.Yes);
                 }
 
                 // Обновление TextBlock tbFilesLeft из другого потока   
@@ -166,50 +169,6 @@ namespace DataUploader
             }
         }
 
-        // Объявление делегата (указателя на метод) с именем InvokeDelegate - может указывать...
-        // ...на любой метод, который, возвращает void и принимает входной параметр типа string
-        private delegate void InvokeDelegate(string showString);
-
-        // Объявление метода, на который будет указывать делегат
-        private void DelegateShowCurrentFile(string currentFilePath)
-        {
-            if (!Dispatcher.CheckAccess())
-            {
-                // Создание делегата InvokeDelegate и чтобы он указывал на DelegateShowCurrentFile
-                InvokeDelegate invokeDelegate = new InvokeDelegate(DelegateShowCurrentFile);
-
-                Dispatcher.Invoke(invokeDelegate, currentFilePath);
-                return;
-            }
-            tbFileInProcess.Text = "Имя: " + System.IO.Path.GetFileName(currentFilePath);
-        }
-
-        private void DelegateShowFilesLeft(string filesLeft)
-        {
-            if (!Dispatcher.CheckAccess())
-            {
-                Dispatcher.Invoke(new InvokeDelegate(DelegateShowFilesLeft), filesLeft);
-                return;
-            }
-            tbFilesLeft.Text = string.Format("Осталось элементов: {0}", filesLeft);
-        }
-
-        private void DelegateShowTime(string time)
-        {
-            if (!Dispatcher.CheckAccess())
-            {
-                Dispatcher.Invoke(new InvokeDelegate(DelegateShowTime), time);
-                return;
-            }
-            tbTimePassed.Text = time;
-        }
-
-        private void ProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            tbPercentCompleted.Text = ("Выполнено " + e.ProgressPercentage.ToString() + "%");
-            pbProcessProgress.Value = e.ProgressPercentage;
-        }
-
         private void BgwWorkCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
 
@@ -222,11 +181,10 @@ namespace DataUploader
             {
                 _t.Dispose();
 
-                string messageBoxText = e.Error.Message;
+                string messageBoxText = string.Format("{0}\n{1}\n{2}", e.Error.Message, e.Error.InnerException, e.Error.StackTrace);
                 string caption = "Ошибка";
 
-                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Warning, MessageBoxResult.Yes);
-                
+                MessageBox.Show(messageBoxText, caption, MessageBoxButton.OK, MessageBoxImage.Error, MessageBoxResult.Yes);
                 Close();
             }
             else if (_isCompleted == true)
@@ -238,11 +196,11 @@ namespace DataUploader
                 btnCancel.Visibility = Visibility.Collapsed;
                 btnRunExplorer.Visibility = Visibility.Visible;
 
-                tbPercentCompleted.Visibility = Visibility.Collapsed;
-                pbProcessProgress.Visibility = Visibility.Collapsed;
-                tbFileInProcess.Visibility = Visibility.Collapsed;
-                tbFilesLeft.Visibility = Visibility.Collapsed;
-                tbTimePassed.Visibility = Visibility.Collapsed;
+                tbPercentCompleted.Visibility = Visibility.Hidden;
+                pbProcessProgress.Visibility = Visibility.Hidden;
+                tbFileInProcess.Visibility = Visibility.Hidden;
+                tbFilesLeft.Visibility = Visibility.Hidden;
+                tbTimePassed.Visibility = Visibility.Hidden;
             }
             else
             {
@@ -250,6 +208,10 @@ namespace DataUploader
                 Close();
             }
         }
+
+        // ----------------------------------------------------------------------------------------
+        // Обработка событий формы
+        // ----------------------------------------------------------------------------------------
 
         /// <summary>
         /// Обработка события Click в Button btnCancel.
@@ -301,5 +263,55 @@ namespace DataUploader
                 }
             }
         }
+
+        // ----------------------------------------------------------------------------------------
+        // Вспомогательные функции
+        // ----------------------------------------------------------------------------------------
+
+        // Объявление делегата (указателя на метод) с именем InvokeDelegate - может указывать...
+        // ...на любой метод, который, возвращает void и принимает входной параметр типа string
+        private delegate void InvokeDelegate(string showString);
+
+        // Объявление метода, на который будет указывать делегат
+        private void DelegateShowCurrentFile(string currentFilePath)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                // Создание делегата InvokeDelegate и чтобы он указывал на DelegateShowCurrentFile
+                InvokeDelegate invokeDelegate = new InvokeDelegate(DelegateShowCurrentFile);
+
+                Dispatcher.Invoke(invokeDelegate, currentFilePath);
+                return;
+            }
+            tbFileInProcess.Text = "Имя: " + System.IO.Path.GetFileName(currentFilePath);
+        }
+
+        private void DelegateShowFilesLeft(string filesLeft)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(new InvokeDelegate(DelegateShowFilesLeft), filesLeft);
+                return;
+            }
+            tbFilesLeft.Text = string.Format("Осталось элементов: {0}", filesLeft);
+        }
+
+        private void DelegateShowTime(string time)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.Invoke(new InvokeDelegate(DelegateShowTime), time);
+                return;
+            }
+            tbTimePassed.Text = time;
+        }
+
+        void TimerCallback(object state)
+        {
+            this._startTime += new TimeSpan(0, 0, 1);
+            // Обновление TextBlock tbTimePassed из другого потока
+            DelegateShowTime(string.Format("{0:hh\\:mm\\:ss}", (_startTime)));
+        }
+
     }
 }
